@@ -1,0 +1,2538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>OKB — Accomplishment of Region</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow+Semi+Condensed:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F26522;--orange-deep:#d34e12;--blue:#0D47A1;--blue-deep:#082c66;--navy:#061d43;
+    --ink:#122238;--muted:#5c6b82;--line:#dfe5ee;--paper:#f4f6fa;--card:#fff;
+    --green:#1d7a4c;--red:#c0271c;--amber:#a8730a;--grey:#c3ccdb;--teal:#167b83;
+    --bar-col:320px;--rule-w:352px;
+    --shadow:0 1px 2px rgba(6,29,67,.06),0 10px 30px rgba(6,29,67,.07);
+    --shadow-hi:0 4px 10px rgba(6,29,67,.10),0 22px 48px rgba(13,71,161,.16);
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --soft:cubic-bezier(.22,1,.36,1);
+  }
+  *{box-sizing:border-box}
+  /* clip, not hidden: overflow:hidden here would make the page its own scroll
+     container and break position:sticky on the header */
+  html,body{margin:0;max-width:100%;overflow-x:clip}
+  body{font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);
+    background:var(--paper);background-image:
+      radial-gradient(1200px 500px at 88% -10%,rgba(13,71,161,.06),transparent 60%),
+      radial-gradient(900px 420px at -8% 0%,rgba(242,101,34,.05),transparent 55%);
+    -webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 18px 60px;position:relative;z-index:1}
+  .hide{display:none!important}
+  #bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .floaty{position:absolute;top:0;left:0;opacity:0;pointer-events:none;user-select:none;
+    -webkit-user-drag:none;will-change:transform,opacity,width}
+  .band{position:sticky;top:0;z-index:120;border-radius:14px;margin-top:18px;padding:22px 26px;color:#fff;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--blue-deep) 55%,var(--blue) 100%);
+    box-shadow:var(--shadow);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    cursor:pointer;transition:box-shadow .22s var(--ease),filter .22s var(--ease)}
+  .band:hover{box-shadow:var(--shadow-hi);filter:saturate(1.05)}
+  .band:focus-visible{outline:3px solid rgba(242,101,34,.9);outline-offset:3px}
+  .band-title{min-width:0}
+  .band h1{font-family:"Barlow Condensed";font-weight:700;font-size:clamp(28px,5vw,44px);
+    line-height:1;margin:0;text-transform:uppercase;letter-spacing:.01em}
+  .band h1 .region-focus{display:inline-block;color:#ff9a3d;
+    background:linear-gradient(90deg,#ffca77 0%,#ff9b3f 42%,var(--orange) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    transition:opacity .22s var(--ease),filter .22s var(--ease)}
+  /* the orange rule under the heading. It is also the target the sign-in
+     light flies into, so it keeps position:relative for the impact spark. */
+  .band-rule{position:relative;display:block;height:4px;width:min(var(--rule-w),100%);margin:11px 0 0;
+    border-radius:999px;box-shadow:0 0 14px rgba(242,101,34,.4);
+    background:linear-gradient(90deg,var(--orange) 0%,#ff9a3d 58%,rgba(255,154,61,.3) 100%)}
+  .band-rule::before{content:"";position:absolute;left:0;top:50%;width:16px;height:16px;
+    margin:-8px 0 0 -8px;border-radius:50%;opacity:0;pointer-events:none;
+    background:radial-gradient(circle,#fff 0%,#ffd9bd 42%,rgba(255,122,51,0) 72%)}
+  .band .sub{font-size:13px;color:#dbe6fa;margin-top:8px;line-height:1.45}
+  .total{flex:0 0 auto;background:linear-gradient(135deg,var(--orange),var(--orange-deep));
+    border-radius:13px;padding:14px 22px;text-align:center;min-width:158px}
+  .total .n{font-family:"Barlow Condensed";font-weight:700;font-size:44px;line-height:.9}
+  .total .l{font-size:11px;letter-spacing:.05em;opacity:.92;margin-top:6px}
+  /* summary cards docked into the page gutters, beside the sticky header.
+     The dock holds clones of the real cards, so the design cannot drift. */
+  .dock{position:fixed;z-index:118;display:flex;align-items:stretch;gap:6px;
+    pointer-events:none;visibility:hidden}
+  .dock.on{visibility:visible}
+  #dockLeft{flex-direction:column}
+  #dockRight{flex-direction:row}
+  #dockRight.stack{flex-direction:column}
+  .dock .stat-card{flex:1 1 0;min-width:0;min-height:0;height:100%;
+    padding:11px 9px 9px;border-radius:12px;
+    grid-template-columns:minmax(0,1fr) minmax(0,.58fr);
+    opacity:0;transform:translateX(-24px) scale(.92);
+    transition:opacity .34s var(--ease),transform .44s var(--ease)}
+  #dockLeft .stat-card{transform:translateX(24px) scale(.92)}
+  .dock .stat-card.in{opacity:1;transform:none}
+  .dock .stat-card::before{height:4px}
+  .dock .stat-value{font-size:clamp(20px,2vw,32px);font-size:clamp(13px,var(--vsize,42cqw),34px)}
+  .dock .stat-icon{width:17px;height:17px;
+    width:clamp(13px,12cqw,19px);height:clamp(13px,12cqw,19px);margin:0 0 5px}
+  .dock .stat-unit{font-size:8.5px;font-size:clamp(6.5px,6.2cqw,9px);line-height:1.1}
+  /* The date card keeps its full-size proportions while docked — only its width
+     changes. It only falls back to the compact treatment when the gutter is too
+     narrow to hold the real thing. */
+  .dock .stat-card.asof{padding:14px 14px 11px 11px;border-radius:13px;min-height:0}
+  .dock .stat-card.asof::before{height:5px}
+  #dockLeft.compact .stat-card.asof{padding:10px 11px 10px 8px}
+  #dockLeft.compact .stat-card.asof::before{height:4px}
+  .dock.tight .stat-value{font-size:clamp(14px,22cqw,22px)}
+  .dock.tight .stat-unit{font-size:clamp(6px,5.6cqw,8px)}
+  .dock.tight .stat-icon{width:clamp(11px,10cqw,15px);height:clamp(11px,10cqw,15px);margin-bottom:3px}
+  .dock.tight .stat-card{grid-template-columns:minmax(0,1fr) minmax(0,.56fr);padding:8px 6px 6px}
+  /* Too many cards for the gutter: they stack, and a stacked card is a single
+     readable line rather than a squeezed copy of the tall one. Height is the
+     constraint here, not width, so the type is sized off --rowh, which
+     positionDock measures. */
+  #dockRight.stack .stat-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;
+    gap:7px;padding:0 9px;border-radius:9px}
+  #dockRight.stack .stat-card::before{inset:0 auto 0 0;height:auto;width:4px;border-radius:9px 0 0 9px}
+  #dockRight.stack .stat-icon{display:none}
+  #dockRight.stack .stat-main{padding:0;justify-content:flex-start}
+  #dockRight.stack .stat-value{width:auto;text-align:left;line-height:1;
+    font-size:clamp(9px,calc(var(--rowh,26px) * .62),22px)}
+  #dockRight.stack .stat-side{flex-direction:row;align-items:center;justify-content:flex-end;padding:0}
+  #dockRight.stack .stat-unit{white-space:nowrap;text-align:right;line-height:1.1;
+    font-size:clamp(6.5px,calc(var(--rowh,26px) * .33),10px)}
+  .slicer{margin:18px 0 4px}
+  .slicer .cap{font-family:"Barlow Semi Condensed";font-weight:600;font-size:11.5px;
+    letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .pills{display:grid;grid-template-columns:repeat(var(--pill-count,1),minmax(0,1fr));gap:6px}
+  .pills button{min-width:0;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 3px;
+    font:inherit;font-size:clamp(8px,.92vw,11.5px);font-weight:600;color:var(--ink);cursor:pointer;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:var(--shadow);
+    transition:transform .18s var(--ease),background .15s,color .15s,border-color .15s}
+  .pills button:hover{transform:translateY(-2px);border-color:#c7d3e6;box-shadow:var(--shadow-hi)}
+  .pills button.on{background:linear-gradient(135deg,var(--navy),var(--blue));border-color:var(--blue-deep);color:#fff}
+  .tools{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(0,1.18fr) minmax(0,1.2fr) auto;
+    gap:10px;align-items:end;width:100%;max-width:100%;margin:16px 0 10px}
+  .grp{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .grp>span,.grp-head>span{font-family:"Barlow Semi Condensed";font-weight:600;font-size:11.5px;
+    letter-spacing:.08em;color:var(--muted)}
+  .grp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:18px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{border:0;background:#fff;padding:9px 12px;font:inherit;font-size:12.5px;color:var(--ink);
+    cursor:pointer;border-right:1px solid var(--line);transition:background .15s,color .15s}
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:#eef3fb}
+  .seg button.on{background:var(--blue);color:#fff}
+  .seg.multi button.on{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff}
+  .seg.multi button[data-v="drainage"].on{background:linear-gradient(135deg,#155f43,var(--green))}
+  .seg.multi button[data-v="isf"].on{background:linear-gradient(135deg,#0f6268,var(--teal))}
+  .type-glyph{display:inline-block;margin-right:4px;font-size:1.06em;line-height:1;vertical-align:-1px}
+  .tools .seg{gap:5px;align-items:stretch;border:0;border-radius:0;overflow:visible;background:transparent}
+  /* single line, always: the label shrinks with the window rather than folding
+     the glyph onto a second row */
+  .tools .seg button{flex:1 1 auto;min-width:0;min-height:38px;padding:8px 6px;
+    border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);
+    font-size:clamp(9.5px,1.02vw,11.5px);font-weight:500;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .tools .seg button.on{border-color:var(--blue-deep)}
+  .tools .seg button[data-v="drainage"].on{border-color:var(--green)}
+  .tools .seg button[data-v="isf"].on{border-color:var(--teal)}
+  .tools .seg button:focus-visible,.btn:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+  .actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;min-width:0}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:38px;
+    border:1px solid var(--line);background:#fff;color:var(--blue);border-radius:9px;
+    padding:8px 9px;font:inherit;font-size:12px;white-space:nowrap;cursor:pointer;box-shadow:var(--shadow);
+    transition:background .15s,color .15s,transform .18s var(--ease)}
+  .btn.icon-only{width:38px;flex:0 0 38px;padding:0}
+  .action-icon{display:block;width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;
+    stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .btn.is-busy .action-icon{animation:control-spin 1s linear infinite}
+  @keyframes control-spin{to{transform:rotate(360deg)}}
+  .btn:hover:not(:disabled){background:#eef3fb;color:var(--orange-deep);transform:translateY(-2px)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.primary{background:var(--orange);border-color:var(--orange-deep);color:#fff}
+  .btn.primary:hover:not(:disabled){background:var(--orange-deep);color:#fff}
+  .summary-cards{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:9px;
+    margin:4px 0 14px;width:100%}
+  /* the date card carries a sentence, so it takes two tracks */
+  .stat-card.asof{grid-column:span 2}
+  .stat-card{--accent:var(--blue);position:relative;min-width:0;min-height:140px;overflow:hidden;
+    container-type:inline-size;
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.6fr);align-items:stretch;gap:0;
+    background:linear-gradient(145deg,#fff 0%,color-mix(in srgb,var(--accent) 6%,#fff) 100%);
+    border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:13px;padding:15px 11px 11px;
+    box-shadow:var(--shadow);
+    transition:opacity .34s var(--ease),transform .42s var(--ease)}
+  .summary-cards.docked-away .stat-card{opacity:0;transform:translateY(-16px) scale(.94)}
+  .stat-card::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:var(--accent)}
+  .stat-card>*{position:relative;z-index:1}
+  .stat-main{display:flex;align-items:center;justify-content:center;min-width:0;padding:2px 3px 0 0;overflow:hidden}
+  /* Everything here is measured in cqw — a slice of the card's own width — so a
+     card sizes itself whether it is one of six in the row, one of eight, or a
+     clone sitting in the dock. The length classes come from the JS that writes
+     the number: a six-character total cannot ride the same scale as "12". */
+  .stat-value{width:100%;min-width:0;font-family:"Barlow Condensed";font-weight:700;
+    font-size:clamp(28px,3.6vw,52px);
+    font-size:clamp(13px,var(--vsize,42cqw),62px);
+    line-height:.88;color:var(--accent);letter-spacing:-.02em;text-align:center;
+    white-space:nowrap;overflow:hidden}
+  .stat-value.len4{--vsize:30cqw}
+  .stat-value.len5{--vsize:29cqw}
+  .stat-value.len6{--vsize:24cqw}
+  .stat-side{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;padding-left:7px}
+  .stat-icon{width:26px;height:26px;width:clamp(15px,11cqw,30px);height:clamp(15px,11cqw,30px);display:block;
+    color:var(--accent);margin:0 0 7px;flex:0 0 auto}
+  .stat-icon svg{width:100%;height:100%;display:block;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .stat-unit{font-family:"Barlow Semi Condensed";font-size:11px;font-size:clamp(7.5px,5.4cqw,12px);font-weight:600;
+    line-height:1.15;color:var(--ink);overflow-wrap:normal;word-break:normal;hyphens:none}
+  .stat-card.asof{--accent:var(--orange);grid-template-columns:40px minmax(0,1fr);
+    grid-template-columns:clamp(20px,12cqw,44px) minmax(0,1fr);
+    min-height:140px;padding-right:12px}
+  .stat-card.asof .stat-icon{width:28px;height:28px;
+    width:clamp(20px,13cqw,32px);height:clamp(20px,13cqw,32px);
+    margin:0;align-self:center;justify-self:center}
+  .stat-date{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;padding-left:8px;overflow:hidden}
+  .stat-date .stat-cap{display:block;margin-bottom:5px;font-family:"Barlow Semi Condensed";
+    font-size:9px;font-size:clamp(7.5px,3.6cqw,10px);font-weight:600;white-space:nowrap;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .stat-date-main{font-family:"Barlow Condensed";font-size:clamp(15px,1.9vw,26px);
+    font-size:clamp(11px,var(--dsize,10.5cqw),28px);
+    font-weight:700;line-height:1.02;color:var(--accent);white-space:nowrap}
+  .stat-date-time{margin-top:4px;font-family:"Barlow Semi Condensed";
+    font-size:12.5px;font-size:clamp(8.5px,5cqw,14px);font-weight:600;color:var(--ink);white-space:nowrap}
+  /* The written-out date only appears when the card is genuinely wide enough
+     for it; below that the card carries the short form rather than a clipped
+     long one. The test is the card's width, so the docked clone decides for
+     itself too. */
+  .d-long{display:none}
+  .d-short{display:inline}
+  @container (min-width:200px){
+    .stat-card.asof{--dsize:9.6cqw}
+    .stat-card.asof .d-long{display:inline}
+    .stat-card.asof .d-short{display:none}
+  }
+  .stat-card.regions{--accent:var(--blue)}
+  .stat-card.sites{--accent:#3387c9}
+  .stat-card.volume{--accent:var(--amber)}
+  .stat-card.waterways{--accent:var(--navy)}
+  .stat-card.drainages{--accent:var(--green)}
+  .stat-card.isf{--accent:var(--teal)}
+  .err{background:#fdeeec;border:1px solid #f3c6c0;color:var(--red);padding:12px 14px;
+    border-radius:11px;font-size:13.5px;margin:12px 0}
+  /* A log that does not add up is not an error — the page still works — but it
+     is the one thing here a person has to go and fix in the sheet. */
+  .log-notice{background:#fff6df;border:1px solid #f0d8a0;color:#7a5a06;padding:11px 14px;
+    border-radius:11px;font-size:12.5px;line-height:1.55;margin:12px 0}
+  .log-notice.hide{display:none}
+  .log-notice strong{color:#5d4406}
+  .log-notice .names{display:block;margin-top:5px;color:#8a6a1e;font-size:11.5px}
+  .pdf-menu{position:fixed;z-index:250;display:none;min-width:188px;padding:7px;background:#fff;
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(6,29,67,.23)}
+  .pdf-menu.open{display:block}
+  .pdf-menu .menu-cap{padding:5px 9px 7px;font-family:"Barlow Semi Condensed";font-size:10.5px;
+    font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .pdf-menu button{display:block;width:100%;border:0;border-radius:8px;background:#fff;padding:9px 10px;
+    text-align:left;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer}
+  .pdf-menu button:hover,.pdf-menu button:focus{background:#eef3fb;color:var(--blue);outline:0}
+  .tree{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);overflow:hidden}
+  .node{border-top:1px solid var(--line)}
+  .node:first-child{border-top:0}
+  .row{display:grid;grid-template-columns:22px minmax(0,1fr) var(--bar-col) 92px;gap:12px;align-items:center;
+    padding:11px 16px;cursor:pointer;transition:background .15s}
+  .row:hover{background:#f7f9fd}
+  .row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+  .chev{width:22px;color:var(--muted);font-size:11px;line-height:1;transition:transform .18s}
+  .node.open>.row>.chev{transform:rotate(90deg)}
+  .nm{min-width:0}
+  /* search */
+  .searchbar{position:relative;margin:12px 0 0}
+  .searchbar input{width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;
+    /* 16px keeps mobile Safari from zooming the page when the field is focused */
+    padding:10px 34px 10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;
+    color:var(--ink);box-shadow:var(--shadow);-webkit-appearance:none;appearance:none}
+  .searchbar input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(13,71,161,.12)}
+  .searchbar input::-webkit-search-decoration,
+  .searchbar input::-webkit-search-cancel-button{-webkit-appearance:none}
+  .search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:28px;
+    display:none;border:0;background:transparent;color:var(--muted);font-size:17px;line-height:1;cursor:pointer}
+  .searchbar.has .search-clear{display:block}
+  .search-clear:hover{color:var(--orange-deep)}
+  .nm .t{font-weight:600;font-size:14.5px;line-height:1.25;overflow-wrap:break-word}
+  .nm .m{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .row-glyph{display:inline-block;font-size:1.15em;line-height:1;vertical-align:-1px}
+  .g-waterway{color:var(--blue)}
+  .g-drainage{color:var(--green)}
+  .g-isf{color:var(--teal)}
+  .pct{text-align:right;font-family:"Barlow Condensed";font-weight:700;font-size:21px;line-height:1}
+  .bar{height:9px;background:#eaeff7;border-radius:5px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:5px;width:0;transition:width .4s ease}
+  .kids{display:none}
+  .node.open>.kids{display:block}
+  .lvl-r>.row{padding-left:18px;background:#f1f5fc;border-left:4px solid var(--blue)}
+  .lvl-r>.row .t{font-family:"Barlow Condensed";font-weight:700;text-transform:uppercase;
+    font-size:20px;letter-spacing:.01em}
+  .lvl-s>.row{padding-left:62px;border-left:4px solid #a9c0e2;background:#fbfcfe}
+  .lvl-s>.row .t{font-size:15px;font-weight:600}
+  .lvl-s>.row .chev{color:var(--blue)}
+  .lvl-w{padding:9px 16px 9px 116px;display:grid;grid-template-columns:minmax(0,1fr) var(--bar-col) 92px;gap:12px;
+    align-items:center;border-top:1px solid #eef2f8;border-left:4px solid #e7edf6}
+  .lvl-w:hover{background:#f8fafd}
+  .lvl-w .t{font-size:13.5px;font-weight:500}
+  .lvl-w .pct{font-size:18px}
+  .done-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;
+    line-height:1.25;vertical-align:1px;border:1px solid #b9d77c;background:#e9f6bd;color:#285f2d}
+  .badge-ongoing{border-color:#f0d878;background:#fdf3c8;color:#7a5a06}
+  .badge-notstarted{border-color:#f3bcb5;background:#fde3e0;color:#a12c1f}
+  /* the log for this waterway does not add up — amber, like Ongoing, because
+     the figure is still usable; it is the sheet that needs a look */
+  .badge-checkme{border-color:#e8b45c;background:#fdeccb;color:#8a5a06}
+  .c0 i{background:var(--grey)} .c1 i{background:var(--red)} .c2 i{background:var(--amber)}
+  .c3 i{background:var(--blue)} .c4 i{background:var(--green)}
+  .p0{color:var(--muted)} .p1{color:var(--red)} .p2{color:var(--amber)}
+  .p3{color:var(--blue)} .p4{color:var(--green)}
+  .tag{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:6px;margin-left:6px;
+    background:#eef2f8;color:var(--muted);vertical-align:1px}
+  .empty{padding:30px;text-align:center;color:var(--muted);font-size:13.5px}
+  footer{margin-top:22px;color:var(--muted);font-size:11.5px;line-height:1.55;text-align:left}
+  footer a{color:var(--blue);font-weight:600;text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  footer .credit{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);
+    font-family:"Barlow Semi Condensed";font-weight:600;font-size:11px;letter-spacing:.05em;
+    line-height:1.7;color:var(--muted)}
+  .settings-launcher{position:fixed;right:20px;bottom:20px;z-index:151;display:none;align-items:center;
+    gap:8px;padding:11px 16px;border:0;border-radius:12px;color:#fff;
+    background:linear-gradient(135deg,var(--navy),var(--blue));font-family:"Barlow Semi Condensed";
+    font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    box-shadow:var(--shadow-hi);cursor:pointer}
+  .settings-launcher.revealed{display:inline-flex}
+  .settings-panel{position:fixed;right:20px;bottom:76px;z-index:150;width:min(340px,calc(100vw - 32px));
+    background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;
+    box-shadow:0 24px 65px rgba(6,29,67,.28);display:none}
+  .settings-panel.open{display:block}
+  .settings-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .settings-head h3{margin:0;font-family:"Barlow Condensed";font-size:22px;text-transform:uppercase}
+  .settings-close{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    color:var(--muted);cursor:pointer;font-size:18px}
+  .setting-row{margin-top:14px}
+  .setting-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px;
+    font-family:"Barlow Semi Condensed";font-size:12px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted)}
+  .setting-label output{color:var(--orange-deep);font-weight:700}
+  .setting-row input[type=range]{width:100%;accent-color:var(--orange);cursor:pointer}
+  .settings-tip{font-size:11.5px;line-height:1.45;color:var(--muted);margin-top:14px;padding-top:12px;
+    border-top:1px solid var(--line)}
+  /* ---------- login gate ---------- */
+  #loginGate{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
+    padding:20px;overflow:auto;background:rgba(6,29,67,.94);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  body.locked #loginGate{display:flex}
+  body.locked .wrap,body.locked .dock,body.locked .settings-launcher,
+  body.locked .settings-panel,body.locked .pdf-menu{display:none!important}
+  /* the frame clips a rotating cone of light, leaving a travelling glow
+     on the 3px ring around the card */
+  .login-frame{position:relative;width:min(540px,100%);padding:3px;border-radius:19px;overflow:hidden;
+    background:rgba(255,255,255,.10);box-shadow:0 30px 80px rgba(6,29,67,.45);
+    transition:box-shadow .35s var(--ease)}
+  .login-frame::before{content:"";position:absolute;left:50%;top:50%;width:210%;height:210%;
+    transform:translate(-50%,-50%) rotate(0deg);pointer-events:none;opacity:0;
+    background:conic-gradient(rgba(255,122,51,0) 0deg,rgba(255,122,51,0) 286deg,
+      rgba(255,122,51,.55) 320deg,#FF7A33 345deg,#ffe3cd 356deg,rgba(255,122,51,0) 360deg);
+    transition:opacity .32s var(--ease)}
+  body.signing .login-frame::before{opacity:1;animation:loginOrbit 1.15s linear infinite}
+  body.signing .login-frame{box-shadow:0 30px 80px rgba(6,29,67,.45),0 0 34px rgba(255,122,51,.28)}
+  @keyframes loginOrbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .login-card{position:relative;z-index:1;width:100%;background:#fff;border-radius:16px;overflow:hidden}
+  .login-head{padding:20px 22px;color:#fff;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--blue-deep) 55%,var(--blue) 100%)}
+  .login-head h2{margin:0;font-family:"Barlow Condensed";font-weight:700;font-size:27px;
+    line-height:1.04;text-transform:uppercase;letter-spacing:.01em;color:#fff}
+  .login-head h2 .kontra{color:#FF7A33}
+  .login-head p{margin:7px 0 0;font-size:11.5px;color:#dbe6fa;line-height:1.45}
+  .login-body{padding:18px 22px 22px}
+  .login-label{font-family:"Barlow Semi Condensed";font-weight:600;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+  .login-regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;
+    max-height:216px;overflow:auto;padding:2px;transition:opacity .25s var(--ease)}
+  .login-regions button{min-width:0;border:1px solid var(--line);background:#fff;border-radius:9px;
+    padding:9px 4px;font:inherit;font-size:11px;font-weight:600;color:var(--ink);cursor:pointer;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:var(--shadow);
+    transition:transform .18s var(--ease),background .15s,color .15s,border-color .15s,box-shadow .18s}
+  .login-regions button:hover{border-color:#c7d3e6;box-shadow:var(--shadow-hi)}
+  .login-regions button:active{transform:scale(.93)}
+  .login-regions button.on{background:linear-gradient(135deg,var(--navy),var(--blue));
+    border-color:var(--blue-deep);color:#fff}
+  .login-regions button.pressed{animation:pressPop .36s var(--ease)}
+  @keyframes pressPop{0%{transform:scale(.88)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
+  body.signing .login-regions{pointer-events:none;opacity:.55}
+  .login-note{grid-column:1/-1;font-size:12px;color:var(--muted);padding:8px 2px}
+  .login-pass{display:flex;gap:8px;margin-top:15px}
+  .login-pass input{flex:1 1 auto;min-width:0;box-sizing:border-box;font-family:inherit;font-size:16px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  .login-pass input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(13,71,161,.12)}
+  .login-pass input:disabled{background:#f6f8fc;color:var(--muted)}
+  /* the hint borrows the label typeface one notch smaller and a shade lighter,
+     so it reads as a caption rather than as typed text. The input itself stays
+     at 16px, which is the only thing that keeps iOS from zooming on focus. */
+  .login-pass input::placeholder{font-family:"Barlow Semi Condensed",system-ui,sans-serif;
+    font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:#9aa7ba;opacity:1}
+  .login-pass input::-webkit-input-placeholder{font-family:"Barlow Semi Condensed",system-ui,sans-serif;
+    font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:#9aa7ba;opacity:1}
+  .login-btn{flex:0 0 auto;border:0;border-radius:10px;padding:10px 22px;cursor:pointer;
+    background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:#fff;
+    font-family:"Barlow Semi Condensed";font-weight:600;font-size:12.5px;letter-spacing:.08em;
+    text-transform:uppercase;box-shadow:0 6px 16px rgba(211,78,18,.24);
+    transition:transform .18s var(--ease),box-shadow .2s ease,opacity .2s}
+  .login-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 24px rgba(211,78,18,.32)}
+  .login-btn:active:not(:disabled){transform:scale(.96)}
+  .login-btn:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+  .login-msg{display:none;margin-top:13px;padding:10px 12px;border-radius:10px;font-size:12.5px;
+    line-height:1.4;background:#fdeeec;border:1px solid #f3c6c0;color:var(--red)}
+  .login-msg.show{display:block}
+  .login-foot{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);
+    font-size:10.5px;line-height:1.6;color:var(--muted);text-align:center}
+  /* ---------- entrance sequence ----------
+     Nothing starts hidden in the base styles, so a reduced-motion visitor
+     still sees a complete screen. The animations only add the arrival. */
+  @keyframes gateIn{from{opacity:0}to{opacity:1}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(26px) scale(.972)}to{opacity:1;transform:none}}
+  @keyframes riseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:none}}
+  @keyframes sheen{from{transform:translateX(-120%)}to{transform:translateX(120%)}}
+  .login-head{position:relative;overflow:hidden}
+  .login-head::after{content:"";position:absolute;inset:0;pointer-events:none;
+    transform:translateX(-120%);
+    background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.17) 48%,transparent 64%)}
+  #loginGate.enter{animation:gateIn .46s ease backwards}
+  #loginGate.enter .login-frame{animation:cardIn .66s var(--soft) .06s backwards}
+  #loginGate.enter .login-head::after{animation:sheen 1.15s cubic-bezier(.4,0,.2,1) .52s both}
+  #loginGate.enter .login-head h2{animation:riseIn .55s var(--soft) .18s backwards}
+  #loginGate.enter .login-head p{animation:riseIn .55s var(--soft) .26s backwards}
+  #loginGate.enter .login-label.l1{animation:riseIn .5s var(--soft) .30s backwards}
+  #loginGate.enter .login-regions button{animation:popIn .42s var(--soft) var(--d,.34s) backwards}
+  #loginGate.enter .login-label.l2{animation:riseIn .5s var(--soft) .46s backwards}
+  #loginGate.enter .login-pass{animation:riseIn .52s var(--soft) .52s backwards}
+  #loginGate.enter .login-foot{animation:riseIn .52s var(--soft) .60s backwards}
+  /* while a stored session is being checked, no card, no flash of the gate */
+  body.resuming #loginGate{opacity:0;pointer-events:none}
+  /* ---------- dashboard reveal cascade ----------
+     Plays once, when the dashboard is unlocked. Fill mode is backwards, not
+     forwards: the element adopts its opening frame the moment the animation is
+     attached — so nothing flashes into view ahead of its delay — and then goes
+     back to obeying the stylesheet, which is what keeps :hover and :active
+     alive on the clickable header. Until the fonts land, the whole masthead is
+     held at visibility:hidden. */
+  @keyframes hdrDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  @keyframes hdrRise10{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes hdrRise8{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes hdrRise12{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes hdrFade{from{opacity:0}to{opacity:1}}
+  @keyframes ruleGrow{from{width:0;opacity:.4}to{opacity:1}}
+  @keyframes ruleSpark{0%{opacity:0;transform:scale(.3)}
+    20%{opacity:1;transform:scale(1.9)}100%{opacity:0;transform:scale(3.1)}}
+  body.fontwait .band,body.fontwait .slicer,body.fontwait #summaryCards{visibility:hidden}
+  body.reveal .band{animation:hdrDrop .6s var(--ease) .05s backwards}
+  body.reveal .total{animation:hdrRise10 .7s var(--ease) .18s backwards}
+  body.reveal .band h1{animation:hdrRise8 .6s var(--ease) .30s backwards}
+  body.reveal .slicer .cap{animation:hdrFade .6s ease .42s backwards}
+  body.reveal .band .sub{animation:hdrFade .6s ease .66s backwards}
+  body.reveal #summaryCards .stat-card{animation:hdrRise12 .55s var(--ease) 1.1s backwards}
+  body.reveal #summaryCards .stat-card:nth-of-type(1){animation-delay:.70s}
+  body.reveal #summaryCards .stat-card:nth-of-type(2){animation-delay:.80s}
+  body.reveal #summaryCards .stat-card:nth-of-type(3){animation-delay:.90s}
+  body.reveal #summaryCards .stat-card:nth-of-type(4){animation-delay:1.0s}
+  body.reveal #summaryCards .stat-card:nth-of-type(5){animation-delay:1.1s}
+  /* three mutually exclusive states for the rule, so none of them can out-rank
+     another: draw it on schedule, hold it at nothing, or draw it on impact */
+  body.rule-auto .band-rule{animation:ruleGrow .8s var(--ease) .55s backwards}
+  body.rule-hold .band-rule{width:0}
+  body.rule-hit .band-rule{animation:ruleGrow .8s var(--ease) backwards}
+  body.rule-hit .band-rule::before{animation:ruleSpark .6s ease-out backwards}
+  /* ---------- the sign-in light, once it leaves the ring ---------- */
+  #starFly{position:fixed;left:0;top:0;width:0;height:0;z-index:410;display:none;
+    pointer-events:none;will-change:transform}
+  body.starring #starFly{display:block}
+  #starFly .core{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,#ffe6d2 36%,#FF7A33 68%,rgba(255,122,51,0) 100%);
+    box-shadow:0 0 12px 3px rgba(255,122,51,.7),0 0 34px 12px rgba(255,122,51,.25)}
+  #starFly .tail{position:absolute;left:0;top:-2.5px;height:5px;border-radius:999px;
+    width:var(--tail,140px);transform:translateX(calc(var(--tail,140px) * -1));
+    background:linear-gradient(270deg,rgba(255,232,214,.95) 0%,rgba(255,122,51,.5) 34%,
+      rgba(255,122,51,0) 100%)}
+  @media(max-width:480px){
+    #loginGate{padding:12px;align-items:flex-start}
+    .login-frame{padding:2px;border-radius:16px}
+    .login-head{padding:15px 16px}
+    .login-head h2{font-size:21px}
+    .login-head p{font-size:10.5px}
+    .login-body{padding:15px 16px 18px}
+    .login-regions{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:4px;max-height:38vh}
+    .login-regions button{font-size:9.5px;padding:8px 2px;border-radius:8px}
+    .login-pass{gap:6px;margin-top:13px}
+    .login-pass input{padding:10px}
+    .login-btn{padding:10px 14px;font-size:11.5px}
+    .login-foot{font-size:9.5px;margin-top:13px}
+  }
+  /* The dock exists only on desktop, where the header height never changes. */
+  @media(min-width:1041px){
+    .band{flex-wrap:nowrap}
+    .band-title{flex:1 1 auto;min-width:0;overflow:hidden}
+    .band-title h1,.band-title .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  }
+  @media(max-width:1040px){
+    .tools{grid-template-columns:minmax(0,1.28fr) minmax(0,1fr) minmax(0,1.12fr)}
+    .actions{grid-column:1/-1;width:100%}
+  }
+  @media(max-width:760px){
+    :root{--bar-col:min(104px,26vw)}
+    .wrap{padding:0 10px 40px}
+    /* header: one compact row, never half the screen */
+    .band{margin-top:10px;padding:11px 12px;gap:9px;border-radius:11px;flex-wrap:nowrap}
+    .band h1{font-size:17px;line-height:1.06}
+    .band-rule{height:3px;--rule-w:188px;margin-top:7px;box-shadow:0 0 9px rgba(242,101,34,.4)}
+    .band .sub{font-size:9.5px;margin-top:4px;line-height:1.35}
+    .total{min-width:0;padding:7px 10px;border-radius:9px}
+    .total .n{font-size:21px}
+    .total .l{font-size:8px;margin-top:3px;letter-spacing:.02em}
+    .slicer{margin:10px 0 2px}
+    .slicer .cap{font-size:10px;margin-bottom:5px}
+    .pills{grid-template-columns:repeat(var(--pill-cols,1),minmax(0,1fr));grid-template-rows:repeat(3,auto);gap:4px}
+    .pills button{font-size:8.5px;padding:6px 2px;border-radius:7px}
+    .searchbar{margin-top:8px}
+    .searchbar input{padding:8px 30px 8px 10px}
+    .tools{display:block;margin:8px 0}
+    .grp{margin-bottom:7px;gap:4px}
+    .grp>span{font-size:9.5px}
+    .seg{width:100%}
+    .seg button{flex:1;padding:7px 4px;font-size:10px;min-height:32px}
+    .tools .seg{gap:4px}
+    .tools .seg button{min-height:32px;font-size:10px;padding:6px 3px}
+    .actions{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,1fr) 32px;gap:5px}
+    .btn{min-height:32px;padding:6px 4px;font-size:10.5px;gap:4px}
+    .btn.icon-only{width:32px;flex:0 0 32px}
+    .action-icon{width:14px;height:14px;flex:0 0 14px}
+    /* every summary card on one row, kept square */
+    .summary-cards{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:5px;margin:2px 0 10px}
+    .stat-card{flex:1 1 0;min-width:0;min-height:60px;max-height:112px;aspect-ratio:1/1;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+      padding:8px 3px 6px;border-radius:9px}
+    .stat-card::before{height:3px}
+    .stat-main,.stat-side,.stat-date{display:flex;flex-direction:column;align-items:center;
+      justify-content:center;width:100%;min-width:0;padding:0;text-align:center}
+    .stat-icon{display:none}
+    .stat-value{font-size:clamp(10px,var(--vsize,26cqw),18px);line-height:1;letter-spacing:0}
+    .stat-unit{font-size:clamp(6px,7cqw,7.5px);line-height:1.1;text-align:center}
+    .stat-card.asof{grid-column:auto;min-height:60px;max-height:112px;aspect-ratio:1/1;padding:8px 3px 6px}
+    .stat-date .stat-cap{font-size:clamp(5.5px,6cqw,6.5px);margin-bottom:2px;letter-spacing:.04em}
+    .stat-date-main{font-size:clamp(8px,11cqw,11px);line-height:1.05}
+    .stat-date-time{font-size:clamp(6.5px,8cqw,8px);margin-top:1px}
+    /* list */
+    .row{grid-template-columns:16px minmax(0,1fr) var(--bar-col) 46px;gap:6px;padding:8px}
+    .lvl-r>.row{padding-left:8px;border-left-width:3px}
+    .lvl-s>.row{padding-left:20px;border-left-width:3px}
+    .lvl-w{grid-template-columns:minmax(0,1fr) var(--bar-col) 46px;gap:6px;
+      padding:7px 8px 7px 34px;border-left-width:3px}
+    .chev{width:16px;font-size:9px}
+    .lvl-r>.row .t{font-size:13px}
+    .lvl-s>.row .t{font-size:11.5px}
+    .lvl-w .t{font-size:10.5px}
+    .nm .m{font-size:8.5px;margin-top:2px;line-height:1.3}
+    .pct{font-size:13px}
+    .lvl-w .pct{font-size:12px}
+    .bar{height:7px}
+    .done-badge{font-size:8px;padding:1px 6px}
+    .tag{font-size:8px}
+    footer{font-size:10px;margin-top:14px}
+  }
+  @media(max-width:480px){
+    :root{--bar-col:min(88px,24vw)}
+    .band h1{font-size:15.5px}
+    .total .n{font-size:19px}
+    .stat-value{font-size:clamp(9px,var(--vsize,26cqw),16px)}
+    .stat-unit{font-size:clamp(5.5px,7cqw,7px)}
+    .stat-date-main{font-size:clamp(7.5px,11cqw,10px)}
+    .lvl-w{padding-left:28px}
+    .lvl-w .t{font-size:10px}
+    .nm .m{font-size:8px}
+  }
+  /* Reduced motion: every element snaps straight to its finished state —
+     nothing hidden, nothing mid-flight, the rule already at full width. */
+  @media(prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+    body.fontwait .band,body.fontwait .slicer,body.fontwait #summaryCards{visibility:visible}
+    body.rule-hold .band-rule{width:min(var(--rule-w),100%)}
+    #starFly,body.starring #starFly{display:none!important}
+    body.resuming #loginGate{opacity:1}
+  }
+</style>
+</head>
+<body class="locked fontwait">
+<div id="bg" aria-hidden="true"></div>
+<div id="starFly" aria-hidden="true"><i class="tail"></i><i class="core"></i></div>
+<div class="dock" id="dockLeft" aria-hidden="true"></div>
+<div class="dock" id="dockRight" aria-hidden="true"></div>
+<div id="loginGate" role="dialog" aria-modal="true" aria-label="Sign in">
+  <div class="login-frame">
+    <div class="login-card">
+      <div class="login-head">
+        <h2>Oplan <span class="kontra">Kontra</span> Baha</h2>
+        <p>Accomplishment dashboard · sign in with your region and its OKB password.</p>
+      </div>
+      <div class="login-body">
+        <div class="login-label l1">Region</div>
+        <div class="login-regions" id="loginRegions"></div>
+        <div class="login-label l2" style="margin-top:15px">OKB Password</div>
+        <div class="login-pass">
+          <input type="password" id="loginPass" autocomplete="current-password"
+                 autocapitalize="off" autocorrect="off" spellcheck="false"
+                 placeholder="Enter your region's password" aria-label="OKB Password">
+          <button type="button" class="login-btn" id="loginBtn">Sign in</button>
+        </div>
+        <div class="login-msg" id="loginMsg" role="alert"></div>
+        <div class="login-foot">
+          Oplan Kontra Baha<br>
+          Department of Public Works and Highways<br>
+          2026
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="band" id="mainHeader" role="button" tabindex="0" aria-label="Scroll to the top of the page">
+    <div class="band-title">
+      <h1>Accomplishment of <span class="region-focus" id="headerRegion">All Regions</span></h1>
+      <span class="band-rule" id="bandRule" aria-hidden="true"></span>
+      <div class="sub">Oplan Kontra Baha · Dredging and desilting accomplishment on every waterway.</div>
+    </div>
+    <div class="total">
+      <div class="n" id="totalPct">—</div>
+      <div class="l" id="totalLbl">nationwide</div>
+    </div>
+  </div>
+  <div class="slicer">
+    <div class="cap">Region</div>
+    <div class="pills" id="regionPills"></div>
+  </div>
+  <div class="searchbar" id="searchBar">
+    <input type="search" id="searchInput" autocomplete="off" autocorrect="off" autocapitalize="off"
+           spellcheck="false" placeholder="Search a region, site or waterway…" aria-label="Search">
+    <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">&times;</button>
+  </div>
+  <div class="tools">
+    <div class="grp">
+      <span>Roll-up</span>
+      <div class="seg" id="segMode">
+        <button type="button" data-v="avg" title="Treats every record equally." aria-label="Simple average. Treats every record equally.">Simple Average</button>
+        <button type="button" data-v="wtd" title="Uses planned_volume_office as the weight." aria-label="Weighted by planned volume. Uses planned_volume_office as the weight.">Weighted</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>Type</span>
+      <div class="seg multi" id="segType" aria-label="Record type filter">
+        <button type="button" data-v="waterway" aria-pressed="true" aria-label="Waterway"><span class="type-glyph" aria-hidden="true">&#9810;&#65038;</span>Waterway</button>
+        <button type="button" data-v="drainage" aria-pressed="false" aria-label="Drainage"><span class="type-glyph" aria-hidden="true">&#9868;</span>Drainage</button>
+        <button type="button" data-v="isf" aria-pressed="false" aria-label="ISF"><span class="type-glyph" aria-hidden="true">&#127968;&#65038;&#127968;&#65038;</span>ISF</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>Records counted</span>
+      <div class="seg" id="segFilter">
+        <button type="button" data-v="all">All</button>
+        <button type="button" data-v="target">With a planned target</button>
+        <button type="button" data-v="zero">Hide 0 / 0</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn icon-only" id="toggleAll" data-expand="true" title="Expand all" aria-label="Expand all" aria-expanded="false">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 8 5-5 5 5M7 16l5 5 5-5"/></svg>
+      </button>
+      <button type="button" class="btn" id="pdfBtn" title="Download PDF (A4). Right-click for paper options." aria-label="Download PDF (A4). Right-click for paper options.">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg><span>PDF</span>
+      </button>
+      <button type="button" class="btn" id="csvBtn" title="Download CSV" aria-label="Download CSV">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg><span>CSV</span>
+      </button>
+      <button type="button" class="btn primary icon-only" id="refresh" title="Refresh data" aria-label="Refresh data">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="err" class="err hide"></div>
+  <div id="logNotice" class="log-notice hide" role="status"></div>
+  <div id="summaryCards" class="summary-cards" aria-live="polite">
+    <div class="stat-card asof">
+      <span class="stat-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4.5 8.5h15M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5Z"/><path d="M8 12h3M13 12h3M8 16h3M13 16h3"/></svg>
+      </span>
+      <span class="stat-date">
+        <span class="stat-cap">Data as of</span>
+        <strong class="stat-date-main"><span class="d-long" id="statAsOfDate">—</span><span class="d-short" id="statAsOfDateShort">—</span></strong>
+        <small class="stat-date-time" id="statAsOfTime">Loading…</small>
+      </span>
+    </div>
+    <div class="stat-card regions" id="statRegionsCard">
+      <span class="stat-main"><strong class="stat-value" id="statRegions">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 6 5-2 6 2 5-2v14l-5 2-6-2-5 2Z"/><path d="M9 4v14M15 6v14"/></svg></span>
+        <span class="stat-unit">Regions</span>
+      </span>
+    </div>
+    <div class="stat-card sites" id="statSitesCard">
+      <span class="stat-main"><strong class="stat-value" id="statSites">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"/><circle cx="12" cy="10" r="2.3"/></svg></span>
+        <span class="stat-unit">Sites</span>
+      </span>
+    </div>
+    <div class="stat-card volume" id="statVolumeCard">
+      <span class="stat-main"><strong class="stat-value" id="statVolume">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 21 7.5v9L12 21 3 16.5v-9L12 3Z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/></svg></span>
+        <span class="stat-unit">m³ accomplished</span>
+      </span>
+    </div>
+    <div class="stat-card waterways" id="statWaterwaysCard">
+      <span class="stat-main"><strong class="stat-value" id="statWaterways">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7c4.2 0 4.2 3 8.4 3S15.6 7 19.8 7H21"/><path d="M3 12c4.2 0 4.2 3 8.4 3s4.2-3 8.4-3H21"/><path d="M5 17c2.5 0 3.1 1 5.2 1s2.7-1 5.2-1"/></svg></span>
+        <span class="stat-unit">Waterways</span>
+      </span>
+    </div>
+    <div class="stat-card drainages hide" id="statDrainagesCard">
+      <span class="stat-main"><strong class="stat-value" id="statDrainages">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h9v4h3a4 4 0 0 1 4 4v2"/><path d="M4 5v8M2 5h4M2 13h4"/><path d="M20 17c-1.6 1.9-2.4 3-2.4 4a2.4 2.4 0 0 0 4.8 0c0-1-.8-2.1-2.4-4Z"/></svg></span>
+        <span class="stat-unit">Drainages</span>
+      </span>
+    </div>
+    <div class="stat-card isf hide" id="statIsfCard">
+      <span class="stat-main"><strong class="stat-value" id="statIsf">—</strong></span>
+      <span class="stat-side">
+        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 5-4 5 4v9H3Z"/><path d="m11 10 4.5-3.5L21 11v9h-8"/><path d="M6 20v-5h4v5M16 20v-5h3v5"/></svg></span>
+        <span class="stat-unit">ISF</span>
+      </span>
+    </div>
+  </div>
+  <div id="tree" class="tree"><div class="empty">Loading…</div></div>
+  <footer>
+    Values are based on reports submitted to the OKB Secretariat and publicly available information from
+    regional office pages. To report a discrepancy, email the OKB Secretariat at
+    <a href="mailto:okb@dpwh.gov.ph">okb@dpwh.gov.ph</a>.
+    <div class="credit">
+      Oplan Kontra Baha<br>
+      Department of Public Works and Highways<br>
+      2026
+    </div>
+  </footer>
+</div>
+<div class="pdf-menu" id="pdfMenu" role="menu" aria-label="PDF paper size">
+  <div class="menu-cap">Download PDF as</div>
+  <button type="button" data-paper="a4" role="menuitem">A4</button>
+  <button type="button" data-paper="letter" role="menuitem">Letter</button>
+  <button type="button" data-paper="long" role="menuitem">Long (8.5 × 13 in)</button>
+</div>
+<button type="button" class="settings-launcher" id="settingsLauncher">Background</button>
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-head">
+    <h3>Background logos</h3>
+    <button type="button" class="settings-close" id="settingsClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="setting-row">
+    <div class="setting-label"><span>Which logos</span></div>
+    <div class="seg" id="segLogos">
+      <button type="button" data-v="both">Both</button>
+      <button type="button" data-v="dpwh">DPWH</button>
+      <button type="button" data-v="okb">OKB</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div class="setting-label"><span>Number of logos</span><output id="logoCountOut">16</output></div>
+    <input type="range" id="logoCount" min="0" max="40" step="1" value="16">
+  </div>
+  <div class="setting-row">
+    <div class="setting-label"><span>Logo size</span><output id="logoSizeOut">100%</output></div>
+    <input type="range" id="logoSize" min="40" max="200" step="5" value="100">
+  </div>
+  <div class="setting-row">
+    <div class="setting-label"><span>Transparency</span><output id="logoOpacityOut">10%</output></div>
+    <input type="range" id="logoOpacity" min="0" max="40" step="1" value="10">
+  </div>
+  <div class="settings-tip">Press Ctrl + Alt + G to hide or show this button. Logos never appear in the PDF.</div>
+</div>
+<script>
+/* Old VIP link forms (?vip, ?page=vip, ?page=<word>) now open vip.html,
+   carrying the word along so the server can still check it. */
+(function forwardVip(){
+  try {
+    var q = new URLSearchParams(location.search);
+    var word = q.get('page') || q.get('key') || '';
+    if (!word){
+      /* a bare word on its own, e.g. ?vip */
+      q.forEach(function(value,name){ if (!word && value === '' && name !== 'preview') word = name; });
+    }
+    if (word && word.toLowerCase() !== 'progress'){
+      location.replace('vip.html?key='+encodeURIComponent(word)+location.hash);
+    }
+  } catch(e){}
+})();
+var LS = 'okbRD.';
+var DATA = null;
+var PREF = { mode:'avg', filter:'all', regions:[], types:['waterway'] };
+var OPEN = {};
+var TYPE_GLYPH = { waterway:'\u2652\uFE0E', drainage:'\u268C', isf:'\uD83C\uDFE0\uFE0E\uD83C\uDFE0\uFE0E' };
+var TYPE_HEX = { waterway:'#0D47A1', drainage:'#1d7a4c', isf:'#167b83' };
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function n1(x){ return (Number(x)||0).toFixed(1); }
+function nInt(x){ return (Number(x)||0).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function actionIcon(name){
+  var paths = {
+    download:'M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4',
+    refresh:'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5',
+    expand:'m7 8 5-5 5 5M7 16l5 5 5-5',
+    collapse:'m7 4 5 5 5-5M7 20l5-5 5 5'
+  };
+  return '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+paths[name]+'"/></svg>';
+}
+function lsGet(k){ try { return JSON.parse(localStorage.getItem(LS+k)||'null'); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(LS+k, JSON.stringify(v)); } catch(e){} }
+(function loadPrefs(){
+  var p = lsGet('prefs');
+  if (p) {
+    if (p.mode) PREF.mode = p.mode;
+    if (p.filter) PREF.filter = p.filter;
+    if (p.regions && p.regions.length) PREF.regions = p.regions;
+    if (Array.isArray(p.types) && p.types.length) {
+      PREF.types = p.types.filter(function(v){ return ['waterway','drainage','isf'].indexOf(v) >= 0; });
+    }
+  }
+  if (!PREF.types.length) PREF.types = ['waterway'];
+  var o = lsGet('open');
+  if (o) OPEN = o;
+})();
+function scaleFactor(){ return (DATA && DATA.scale === 'fraction') ? 100 : 1; }
+function wayPct(w){
+  if (w.g === null || w.g === undefined || w.g === '') return null;
+  var v = Number(w.g);
+  return isFinite(v) ? v * scaleFactor() : null;
+}
+function isBlankZero(x){ return x === null || x === undefined || x === '' || Number(x) === 0; }
+function hasTarget(w){ return Number(w.p) > 0; }
+function recordTypeKey(w){
+  if (!w) return 'waterway';
+  if (w.i === true || w.i === 1 || String(w.i).toLowerCase() === 'true') return 'isf';
+  if (w.d === true || w.d === 1 || String(w.d).toLowerCase() === 'true') return 'drainage';
+  var raw = String(w.t || w.type || w.kind || w.category || '').trim().toLowerCase();
+  if (/\bisf\b|informal\s+settler/.test(raw)) return 'isf';
+  if (/drain/.test(raw)) return 'drainage';
+  return 'waterway';
+}
+function isDrainage(w){ return recordTypeKey(w) === 'drainage'; }
+function isISF(w){ return recordTypeKey(w) === 'isf'; }
+/* A type glyph only carries information when more than one type is on screen.
+   With a single type selected every marker would be identical, so it is dropped. */
+function multiType(){ return PREF.types.length > 1; }
+function countLabel(n,singular,plural){ return n+' '+(n===1?singular:plural); }
+function typeCountLabel(kind,n){
+  if (multiType()) return TYPE_GLYPH[kind]+' '+nInt(n);
+  if (kind === 'isf') return n+' ISF';
+  if (kind === 'drainage') return countLabel(n,'drainage','drainages');
+  return countLabel(n,'waterway','waterways');
+}
+function counted(w){
+  if (PREF.types.indexOf(recordTypeKey(w)) < 0) return false;
+  if (PREF.filter === 'target') return hasTarget(w);
+  if (PREF.filter === 'zero') return !(isBlankZero(w.p) && isBlankZero(w.v));
+  return true;
+}
+function agg(ways){
+  if (!ways.length) return { pct:null, n:0 };
+  if (PREF.mode === 'wtd') {
+    var sw = 0, sv = 0;
+    ways.forEach(function(w){
+      var p = Number(w.p) || 0, v = wayPct(w);
+      if (p > 0) { sw += p; sv += p * (v === null ? 0 : v); }
+    });
+    return { pct:sw > 0 ? sv/sw : null, n:ways.length };
+  }
+  var sum = 0;
+  ways.forEach(function(w){ var v = wayPct(w); sum += (v === null ? 0 : v); });
+  return { pct:sum/ways.length, n:ways.length };
+}
+function band(pct){
+  if (pct === null) return 0;
+  if (pct >= 100) return 4;
+  if (pct >= 75) return 3;
+  if (pct >= 40) return 2;
+  if (pct > 0) return 1;
+  return 0;
+}
+var BAND_HEX = ['#c3ccdb','#c0271c','#a8730a','#0D47A1','#1d7a4c'];
+function barHtml(pct){
+  var b = band(pct), w = pct === null ? 0 : Math.max(0,Math.min(100,pct));
+  return '<div class="bar c'+b+'"><i style="width:'+w.toFixed(1)+'%"></i></div>';
+}
+function pctHtml(pct){
+  return '<div class="pct p'+band(pct)+'">'+(pct === null ? '—' : n1(pct)+'%')+'</div>';
+}
+function normLabel(s){
+  return String(s || '').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim();
+}
+function isRedundantLabel(value,r,s){
+  var v = normLabel(value);
+  if (!v) return false;
+  var labels = [r && r.n,r && r.ab,r && r.a,s && s.n,s && s.a];
+  for (var i=0;i<labels.length;i++) if (v === normLabel(labels[i])) return true;
+  return false;
+}
+function cleanWaterwayName(w,r,s){
+  var original = String(w && w.n || '').trim();
+  if (!original) return '';
+  var parts = original.split(/\s+(?:[-–—|>»]|\/{1,2})\s+|\s*:\s+/);
+  if (parts.length < 2) return original;
+  var kept = parts.filter(function(part){ return !isRedundantLabel(part,r,s); });
+  return kept.length ? kept.join(' · ') : original;
+}
+var STATUS_BADGES = [
+  { re:/^(completed|complete|done|finished)\b(.*)$/i, cls:'done-badge', label:'Completed' },
+  { re:/^(on[-\s]?going|in[-\s]progress|started)\b(.*)$/i, cls:'done-badge badge-ongoing', label:'Ongoing' },
+  { re:/^(not[-\s]yet[-\s]started|not[-\s]started|not[-\s]yet[-\s]begun|unstarted|pending)\b(.*)$/i,
+    cls:'done-badge badge-notstarted', label:'Not Yet Started' }
+];
+function statusBadge(status){
+  var s = String(status || '').trim();
+  if (!s) return null;
+  for (var i=0;i<STATUS_BADGES.length;i++){
+    var m = s.match(STATUS_BADGES[i].re);
+    if (m) return { cls:STATUS_BADGES[i].cls, label:STATUS_BADGES[i].label, rest:(m[2]||'').trim() };
+  }
+  return null;
+}
+function statusHtml(status){
+  var b = statusBadge(status);
+  if (!b) return esc(String(status || '').trim());
+  return '<span class="'+b.cls+'">'+b.label+'</span>'+(b.rest ? ' '+esc(b.rest) : '');
+}
+function statusText(status){
+  var b = statusBadge(status);
+  if (!b) return String(status || '').trim();
+  return b.label+(b.rest ? ' '+b.rest : '');
+}
+function wayMeta(w,r,s){
+  var meta = [];
+  /* the type is carried by its glyph, and only when more than one type is listed */
+  if (multiType()){
+    var k = recordTypeKey(w);
+    meta.push('<span class="row-glyph g-'+k+'" aria-hidden="true">'+TYPE_GLYPH[k]+'</span>');
+  }
+  if (w.o && !isRedundantLabel(w.o,r,s)) meta.push(esc(w.o));
+  meta.push(w.p !== null && Number(w.p) > 0
+    ? nInt(w.v||0)+' / '+nInt(w.p)+' m³'
+    : 'no planned volume');
+  if (w.s) meta.push(statusHtml(w.s));
+  /* Where the figure came from. Only shown on a waterway the Accomplishment
+     Log has entries for, so a row without one reads exactly as it did. */
+  if (w.lu) meta.push('updated '+esc(w.lu)+(w.lc > 1 ? ' · '+w.lc+' entries' : ''));
+  if (w.lw) meta.push('<span class="done-badge badge-checkme" '+
+    'title="The logged entries do not add up to the running total stored on the last row. '+
+    'The figure shown is the one worked out from the entries.">check the log</span>');
+  return meta.join(' · ');
+}
+var REGION_ORDER = {
+  'CAR':0,'NCR':1,'I':2,'II':3,'III':4,'IV-A':5,'MIMAROPA':6,'IV-B':6,'V':7,
+  'VI':8,'NIR':9,'VII':10,'VIII':11,'IX':12,'X':13,'XI':14,'XII':15,'XIII':16,'BARMM':17
+};
+var WORDED_REGIONS = { 'CAR':1,'NCR':1,'NIR':1,'MIMAROPA':1,'BARMM':1 };
+function regionToken(r){
+  var raw = String(r && (r.ab || r.a || r.n) || '').toUpperCase().trim();
+  if (/\bMIMAROPA\b/.test(raw)) return 'MIMAROPA';
+  if (/\bBARMM\b/.test(raw)) return 'BARMM';
+  if (/\bNIR\b/.test(raw)) return 'NIR';
+  if (/\bNCR\b/.test(raw)) return 'NCR';
+  if (/\bCAR\b/.test(raw)) return 'CAR';
+  raw = raw.replace(/^REGION\s+/,'').trim();
+  var m = raw.match(/^(IV-A|IV-B|XIII|XII|XI|VIII|VII|VI|IX|IV|III|II|I|V|X)(?:\b|\s|$)/);
+  return m ? m[1] : raw;
+}
+function regionRank(r){
+  var token = regionToken(r);
+  return Object.prototype.hasOwnProperty.call(REGION_ORDER,token) ? REGION_ORDER[token] : 999;
+}
+function sortRegions(regions){
+  return (regions || []).map(function(r,i){ return { r:r,i:i }; }).sort(function(a,b){
+    var d = regionRank(a.r)-regionRank(b.r);
+    return d || a.i-b.i;
+  }).map(function(x){ return x.r; });
+}
+function regionKey(r){ return r.a || r.n; }
+function regionOn(r){ return !PREF.regions.length || PREF.regions.indexOf(regionKey(r)) >= 0; }
+var SEARCH = '';
+function searchable(s){ return String(s == null ? '' : s).toLowerCase(); }
+function visibleTree(){
+  if (!DATA || !DATA.regions) return [];
+  var out = [];
+  DATA.regions.filter(regionOn).forEach(function(r){
+    var regionHit = !SEARCH ||
+      searchable(r.n).indexOf(SEARCH) >= 0 || searchable(r.a).indexOf(SEARCH) >= 0;
+    var sites = [], rWays = [];
+    r.s.forEach(function(s){
+      var siteHit = regionHit || searchable(s.n).indexOf(SEARCH) >= 0;
+      var ws = s.w.filter(function(w){
+        if (!counted(w)) return false;
+        if (siteHit) return true;
+        return searchable(w.n).indexOf(SEARCH) >= 0;
+      });
+      if (!ws.length) return;
+      rWays = rWays.concat(ws);
+      sites.push({ n:s.n, w:ws, a:agg(ws) });
+    });
+    if (!sites.length) return;
+    out.push({ n:r.n, ab:r.a, key:regionKey(r), sites:sites, ways:rWays, a:agg(rWays) });
+  });
+  return out;
+}
+function joinWithAnd(items){
+  if (!items.length) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return items[0]+' and '+items[1];
+  return items.slice(0,-1).join(', ')+', and '+items[items.length-1];
+}
+function shortRegionName(r){
+  var s = String(r.ab || r.a || r.n || '').trim();
+  return s || 'Region';
+}
+function regionHeaderPart(r){
+  var token = regionToken(r);
+  return { worded:!!WORDED_REGIONS[token],label:token || shortRegionName(r) };
+}
+function dashboardRegionTitle(){
+  if (!PREF.regions.length) return 'All Regions';
+  var parts = DATA.regions.filter(regionOn).map(regionHeaderPart);
+  if (!parts.length) return 'Selected Regions';
+  var worded = parts.filter(function(x){ return x.worded; }).map(function(x){ return x.label; });
+  var numbered = parts.filter(function(x){ return !x.worded; }).map(function(x){ return x.label; });
+  var numberedPhrase = numbered.length ? (numbered.length === 1 ? 'Region ' : 'Regions ')+joinWithAnd(numbered) : '';
+  if (!worded.length) return numberedPhrase;
+  if (!numbered.length) return joinWithAnd(worded);
+  if (worded.length === 1) return worded[0]+(numbered.length === 1 ? ' and ' : ', ')+numberedPhrase;
+  return worded.join(', ')+', and '+numberedPhrase;
+}
+function regionDocumentTitle(r){
+  var part = regionHeaderPart(r);
+  return 'Accomplishment of '+(part.worded ? part.label : 'Region '+part.label);
+}
+function selectedTypeText(){
+  var labels = [];
+  if (PREF.types.indexOf('waterway') >= 0) labels.push('Waterway');
+  if (PREF.types.indexOf('drainage') >= 0) labels.push('Drainage');
+  if (PREF.types.indexOf('isf') >= 0) labels.push('ISF');
+  return joinWithAnd(labels);
+}
+function contextLineForRegion(r){
+  var modeTxt = PREF.mode === 'wtd' ? 'weighted by planned volume' : 'simple average';
+  var filterTxt = PREF.filter === 'target' ? 'records with a planned target only'
+                : PREF.filter === 'zero' ? '0 target / 0 accomplishment removed'
+                : 'all matching records';
+  return shortRegionName(r)+' · '+modeTxt+' · '+filterTxt+' · '+selectedTypeText();
+}
+function monthName(mon){
+  var m = String(mon || '').slice(0,3).toLowerCase();
+  return {jan:'January',feb:'February',mar:'March',apr:'April',may:'May',jun:'June',jul:'July',aug:'August',sep:'September',oct:'October',nov:'November',dec:'December'}[m] || mon;
+}
+function dataDateParts(value){
+  if (!value) return { date:'—',time:'Unavailable' };
+  var human = String(value).trim().match(/^(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})(?:,\s*(.+))?$/);
+  if (human) return { date:monthName(human[2])+' '+human[1]+', '+human[3],time:human[4] || '' };
+  var d = new Date(value);
+  if (!isFinite(d.getTime())) return { date:String(value),time:'' };
+  try {
+    return {
+      date:new Intl.DateTimeFormat('en-US',{ month:'long',day:'numeric',year:'numeric' }).format(d),
+      time:new Intl.DateTimeFormat('en-US',{ hour:'numeric',minute:'2-digit',hour12:true }).format(d)
+        .replace(/\b(am|pm)\b/g,function(x){ return x.toUpperCase(); })
+    };
+  } catch(e){ return { date:String(value),time:'' }; }
+}
+function dataDateCompact(value){
+  var p = dataDateParts(value);
+  return { date:p.date.replace(/^([A-Za-z]{3})[a-z]+/,'$1'),time:p.time };
+}
+function treeStats(tree){
+  var sites = 0,waterways = 0,drainages = 0,isf = 0;
+  tree.forEach(function(r){
+    sites += r.sites.length;
+    r.ways.forEach(function(w){
+      var type = recordTypeKey(w);
+      if (type === 'drainage') drainages++;
+      else if (type === 'isf') isf++;
+      else waterways++;
+    });
+  });
+  return { regions:tree.length,sites:sites,waterways:waterways,drainages:drainages,isf:isf };
+}
+/* region and site rows carry the same volume pair as the record rows */
+function rowMeta(ways){
+  var vol = volumeSummary(ways);
+  return waysSummary(ways)+(vol ? ' · '+vol : '');
+}
+function volumeTotals(ways){
+  var acc = 0, plan = 0;
+  (ways||[]).forEach(function(w){
+    var p = Number(w.p), v = Number(w.v);
+    if (isFinite(p) && p > 0) plan += p;
+    if (isFinite(v) && v > 0) acc += v;
+  });
+  return { acc:acc, plan:plan };
+}
+/* the same accomplished / planned pair the record rows already show */
+function volumeSummary(ways){
+  var t = volumeTotals(ways);
+  if (!t.acc && !t.plan) return '';
+  return nInt(t.acc)+' / '+nInt(t.plan)+' m³';
+}
+function compactVolume(n){
+  var v = Number(n) || 0;
+  if (v >= 1000000) return (v/1000000).toFixed(v >= 10000000 ? 0 : 1).replace(/\.0$/,'')+'M';
+  if (v >= 100000) return Math.round(v/1000)+'K';
+  return nInt(v);
+}
+function waysSummary(ways){
+  var c = {waterways:0,drainages:0,isf:0};
+  ways.forEach(function(w){
+    var t = recordTypeKey(w);
+    if (t === 'drainage') c.drainages++;
+    else if (t === 'isf') c.isf++;
+    else c.waterways++;
+  });
+  var parts = [];
+  if (c.waterways) parts.push(typeCountLabel('waterway',c.waterways));
+  if (c.drainages) parts.push(typeCountLabel('drainage',c.drainages));
+  if (c.isf) parts.push(typeCountLabel('isf',c.isf));
+  return parts.length ? parts.join(' · ') : '0 records';
+}
+/* the number decides its own scale: the card CSS reads these length classes */
+function setStatValue(id,text){
+  var el = $(id);
+  if (!el) return;
+  var value = String(text == null ? '' : text);
+  el.textContent = value;
+  var n = value.replace(/[^0-9A-Za-z.,]/g,'').length;
+  el.className = 'stat-value' + (n >= 6 ? ' len6' : n === 5 ? ' len5' : n === 4 ? ' len4' : '');
+}
+var DOCK_STATS = null;
+/*
+ * One line, only when the Accomplishment Log contradicts itself: the entries
+ * for a waterway do not add up to the running total written on its last row.
+ * The dashboard shows the replayed figure either way; this says which
+ * waterways to go and look at.
+ */
+function updateLogNotice(){
+  var box = $('logNotice');
+  if (!box) return;
+  var log = DATA && DATA.log;
+  var diag = (DATA && DATA.diagnostics) || {};
+  if (!log || !log.present || (!log.mismatches && !log.unknownModes)){
+    box.className = 'log-notice hide';
+    box.innerHTML = '';
+    return;
+  }
+  var parts = [];
+  if (log.mismatches){
+    var names = (diag.logMismatches || []).slice(0,6).map(function(m){ return m.name; });
+    parts.push('<strong>'+log.mismatches+' waterway'+(log.mismatches===1?'':'s')+
+      ' in the Accomplishment Log do'+(log.mismatches===1?'es':'')+' not add up.</strong> '+
+      'The entries were replayed and that total is what is shown; the running total stored '+
+      'on the last row says something else, which means the sheet was edited by hand.'+
+      (names.length ? '<span class="names">'+esc(names.join(' · '))+
+        (log.mismatches > names.length ? ' and '+(log.mismatches-names.length)+' more' : '')+'</span>' : ''));
+  }
+  if (log.unknownModes){
+    var modes = (diag.logUnknownModes || []).slice(0,6);
+    parts.push('<strong>'+log.unknownModes+' entry_mode value'+(log.unknownModes===1?'':'s')+
+      ' not recognised.</strong> Those entries were added to the total rather than replacing it.'+
+      (modes.length ? '<span class="names">'+esc(modes.join(' · '))+'</span>' : ''));
+  }
+  box.className = 'log-notice';
+  box.innerHTML = parts.join('<span class="names"></span>');
+}
+function updateSummaryCards(tree){
+  var s = treeStats(tree);
+  var ways = [];
+  tree.forEach(function(r){ ways = ways.concat(r.ways); });
+  var vol = volumeTotals(ways);
+  s.acc = vol.acc;
+  s.plan = vol.plan;
+  DOCK_STATS = s;
+  var date = dataDateParts(DATA && DATA.generatedAt);
+  $('statAsOfDate').textContent = date.date;
+  $('statAsOfDateShort').textContent = dataDateCompact(DATA && DATA.generatedAt).date;
+  $('statAsOfTime').textContent = date.time;
+  setStatValue('statRegions',nInt(s.regions));
+  setStatValue('statSites',nInt(s.sites));
+  $('statRegionsCard').classList.toggle('hide',s.regions === 1);
+  $('statSitesCard').classList.toggle('hide',s.sites === 1);
+  setStatValue('statVolume',compactVolume(vol.acc));
+  $('statVolumeCard').title = nInt(vol.acc)+' of '+nInt(vol.plan)+' m³ accomplished';
+  $('statVolumeCard').classList.toggle('hide',!vol.acc && !vol.plan);
+  setStatValue('statWaterways',nInt(s.waterways));
+  setStatValue('statDrainages',nInt(s.drainages));
+  setStatValue('statIsf',nInt(s.isf));
+  $('statWaterwaysCard').classList.toggle('hide',PREF.types.indexOf('waterway') < 0);
+  $('statDrainagesCard').classList.toggle('hide',PREF.types.indexOf('drainage') < 0);
+  $('statIsfCard').classList.toggle('hide',PREF.types.indexOf('isf') < 0);
+}
+function buildPills(){
+  if (!DATA) return;
+  var html = '<button type="button" data-r="__ALL" class="'+
+    (PREF.regions.length ? '' : 'on')+'" title="All regions">All regions</button>';
+  html += DATA.regions.map(function(r){
+    return '<button type="button" data-r="'+esc(regionKey(r))+'" title="'+esc(r.n)+'" class="'+
+      (PREF.regions.indexOf(regionKey(r)) >= 0 ? 'on' : '')+'">'+esc(r.a || r.n)+'</button>';
+  }).join('');
+  $('regionPills').innerHTML = html;
+  var count = $('regionPills').children.length;
+  $('regionPills').style.setProperty('--pill-count',count);
+  $('regionPills').style.setProperty('--pill-cols',Math.ceil(count/3));
+  Array.prototype.forEach.call($('regionPills').children,function(b){
+    b.onclick = function(){
+      var k = b.getAttribute('data-r');
+      if (k === '__ALL') PREF.regions = [];
+      else {
+        var i = PREF.regions.indexOf(k);
+        if (i >= 0) PREF.regions.splice(i,1); else PREF.regions.push(k);
+      }
+      lsSet('prefs',PREF);
+      buildPills();
+      render();
+    };
+  });
+}
+function render(){
+  if (!DATA) return;
+  var tree = visibleTree();
+  var counts = treeStats(tree);
+  var allWays = [];
+  tree.forEach(function(r){ allWays = allWays.concat(r.ways); });
+  var grand = agg(allWays);
+  $('headerRegion').textContent = dashboardRegionTitle();
+  $('totalPct').textContent = grand.pct === null ? '—' : n1(grand.pct)+'%';
+  var totalParts = [];
+  if (PREF.types.indexOf('waterway') >= 0) totalParts.push(typeCountLabel('waterway',counts.waterways));
+  if (PREF.types.indexOf('drainage') >= 0) totalParts.push(typeCountLabel('drainage',counts.drainages));
+  if (PREF.types.indexOf('isf') >= 0) totalParts.push(typeCountLabel('isf',counts.isf));
+  if (!PREF.regions.length) totalParts.push('nationwide');
+  else if (counts.regions > 1) totalParts.push(counts.regions+' regions');
+  $('totalLbl').textContent = totalParts.join(' · ');
+  updateSummaryCards(tree);
+  updateLogNotice();
+  paintTypeSeg();
+  $('tree').innerHTML = tree.length ? tree.map(function(r){
+    var rKey = 'R:'+r.key;
+    var sites = r.sites.map(function(s){
+      var sKey = rKey+'|S:'+s.n;
+      var ways = s.w.map(function(w){
+        var v = wayPct(w);
+        return '<div class="lvl-w">'+
+          '<div class="nm"><div class="t">'+esc(cleanWaterwayName(w,r,s))+'</div><div class="m">'+wayMeta(w,r,s)+'</div></div>'+
+          barHtml(v)+pctHtml(v)+'</div>';
+      }).join('');
+      return '<div class="node lvl-s'+(SEARCH||OPEN[sKey]?' open':'')+'" data-k="'+esc(sKey)+'">'+
+        '<div class="row" tabindex="0"><span class="chev">&#9654;</span>'+
+          '<div class="nm"><div class="t">'+esc(s.n)+'</div><div class="m">'+rowMeta(s.w)+'</div></div>'+
+          barHtml(s.a.pct)+pctHtml(s.a.pct)+
+        '</div><div class="kids">'+ways+'</div></div>';
+    }).join('');
+    return '<div class="node lvl-r'+(SEARCH||OPEN[rKey]?' open':'')+'" data-k="'+esc(rKey)+'">'+
+      '<div class="row" tabindex="0"><span class="chev">&#9654;</span>'+
+        '<div class="nm"><div class="t">'+esc(r.n)+'</div>'+
+          '<div class="m">'+r.sites.length+' site'+(r.sites.length===1?'':'s')+' · '+rowMeta(r.ways)+'</div></div>'+
+        barHtml(r.a.pct)+pctHtml(r.a.pct)+
+      '</div><div class="kids">'+sites+'</div></div>';
+  }).join('') : '<div class="empty">Nothing matches the current filters.</div>';
+  Array.prototype.forEach.call($('tree').querySelectorAll('.node>.row'),function(row){
+    row.onclick = function(){ toggleNode(row.parentNode); };
+    row.onkeydown = function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNode(row.parentNode); }
+    };
+  });
+  updateToggleLabel();
+  evaluateDock();
+}
+function toggleNode(node){
+  var open = node.classList.toggle('open');
+  OPEN[node.getAttribute('data-k')] = open ? 1 : 0;
+  lsSet('open',OPEN);
+  updateToggleLabel();
+}
+function updateToggleLabel(){
+  var nodes = $('tree').querySelectorAll('.node');
+  var anyClosed = false;
+  Array.prototype.forEach.call(nodes,function(n){ if (!n.classList.contains('open')) anyClosed = true; });
+  var button = $('toggleAll');
+  var label = anyClosed ? 'Expand all' : 'Collapse all';
+  button.innerHTML = actionIcon(anyClosed ? 'expand' : 'collapse');
+  button.setAttribute('data-expand',anyClosed ? 'true' : 'false');
+  button.setAttribute('aria-expanded',nodes.length && !anyClosed ? 'true' : 'false');
+  button.setAttribute('aria-label',label);
+  button.title = label;
+  button.disabled = !nodes.length;
+}
+$('toggleAll').onclick = function(){
+  var nodes = $('tree').querySelectorAll('.node');
+  var expand = $('toggleAll').getAttribute('data-expand') === 'true';
+  Array.prototype.forEach.call(nodes,function(n){
+    n.classList.toggle('open',expand);
+    OPEN[n.getAttribute('data-k')] = expand ? 1 : 0;
+  });
+  lsSet('open',OPEN);
+  updateToggleLabel();
+};
+function scrollToPageTop(){
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top:0,left:0,behavior:reduced ? 'auto' : 'smooth' });
+}
+/* ---------- search ---------- */
+var SEARCH_TIMER = null;
+function applySearch(value){
+  var v = String(value || '').trim().toLowerCase();
+  $('searchBar').classList.toggle('has',!!value);
+  if (v === SEARCH) return;
+  SEARCH = v;
+  render();
+}
+$('searchInput').addEventListener('input',function(){
+  var value = this.value;
+  clearTimeout(SEARCH_TIMER);
+  SEARCH_TIMER = setTimeout(function(){ applySearch(value); },160);
+});
+$('searchInput').addEventListener('keydown',function(e){
+  if (e.key === 'Escape'){ this.value = ''; applySearch(''); this.blur(); }
+});
+$('searchClear').onclick = function(){
+  $('searchInput').value = '';
+  applySearch('');
+  $('searchInput').focus();
+};
+$('mainHeader').onclick = scrollToPageTop;
+$('mainHeader').onkeydown = function(e){
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); scrollToPageTop(); }
+};
+/* ============ summary cards docking into the sticky header ============
+   Desktop only. The header keeps exactly the same height in both states,
+   so the trigger can never oscillate. Cards leave and return one at a time. */
+var DOCK = { on:false, sig:'', tick:false, timer:null };
+function dockEnabled(){
+  if (window.innerWidth < 1041) return false;
+  var g = dockGeometry();
+  return Math.min(g.leftWidth,g.rightWidth) >= 96;   /* needs real gutter space */
+}
+function dockSignature(){
+  var s = DOCK_STATS;
+  if (!s || !DATA) return '';
+  return [PREF.types.join(','),s.regions,s.sites,s.waterways,s.drainages,s.isf,s.acc,s.plan,DATA.generatedAt].join('|');
+}
+function buildDockCards(){
+  var left = $('dockLeft'), right = $('dockRight');
+  left.innerHTML = '';
+  right.innerHTML = '';
+  Array.prototype.forEach.call($('summaryCards').querySelectorAll('.stat-card'),function(card){
+    if (card.classList.contains('hide')) return;
+    var clone = card.cloneNode(true);
+    clone.removeAttribute('id');
+    /* duplicate ids would shadow the real cards in getElementById */
+    Array.prototype.forEach.call(clone.querySelectorAll('[id]'),function(n){ n.removeAttribute('id'); });
+    (card.classList.contains('asof') ? left : right).appendChild(clone);
+  });
+}
+/* The dock lives in the page gutters, so the header itself is never touched.
+   Each column fills its gutter with clearance from both the window edge and
+   the header, so it can never slide underneath the header. */
+var DOCK_GAP = 12, DOCK_CARD_GAP = 6;
+function dockGeometry(){
+  var hr = $('mainHeader').getBoundingClientRect();
+  return {
+    hr: hr,
+    leftWidth: hr.left - DOCK_GAP*2,
+    rightWidth: window.innerWidth - hr.right - DOCK_GAP*2
+  };
+}
+function positionDock(){
+  var g = dockGeometry(), hr = g.hr;
+  var L = $('dockLeft'), R = $('dockRight');
+  L.style.top = hr.top+'px';
+  L.style.height = hr.height+'px';
+  L.style.left = DOCK_GAP+'px';
+  L.style.width = Math.max(0,g.leftWidth)+'px';
+  R.style.top = hr.top+'px';
+  R.style.height = hr.height+'px';
+  R.style.left = (hr.right+DOCK_GAP)+'px';
+  R.style.width = Math.max(0,g.rightWidth)+'px';
+  /* side by side while each card can still be read, stacked when it cannot */
+  L.classList.toggle('compact',g.leftWidth < 210);
+  var n = R.children.length || 1;
+  var per = (g.rightWidth-(n-1)*DOCK_CARD_GAP)/n;
+  var stacked = per < 92;
+  R.classList.toggle('stack',stacked);
+  R.classList.toggle('tight',per < 132);
+  /* a stacked card is bounded by its row height, which no CSS unit can see */
+  R.style.setProperty('--rowh',
+    (stacked ? Math.max(12,(hr.height-(n-1)*DOCK_CARD_GAP)/n) : 26).toFixed(1)+'px');
+}
+function dockCardEls(){
+  return [].concat(
+    Array.prototype.slice.call($('dockLeft').querySelectorAll('.stat-card')),
+    Array.prototype.slice.call($('dockRight').querySelectorAll('.stat-card'))
+  );
+}
+function playDockIn(){
+  var els = dockCardEls();
+  positionDock();
+  $('dockLeft').classList.add('on');
+  $('dockRight').classList.add('on');
+  els.forEach(function(el,i){ el.style.transitionDelay = (i*75)+'ms'; });
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      els.forEach(function(el){ el.classList.add('in'); });
+    });
+  });
+}
+function playDockOut(){
+  var els = dockCardEls(), n = els.length;
+  els.forEach(function(el,i){
+    el.style.transitionDelay = ((n-1-i)*60)+'ms';
+    el.classList.remove('in');
+  });
+  clearTimeout(DOCK.timer);
+  DOCK.timer = setTimeout(function(){
+    if (!DOCK.on){
+      $('dockLeft').classList.remove('on');
+      $('dockRight').classList.remove('on');
+      $('dockLeft').innerHTML = '';
+      $('dockRight').innerHTML = '';
+    }
+  },n*60+500);
+}
+function staggerMainCards(hiding){
+  var cards = $('summaryCards').querySelectorAll('.stat-card:not(.hide)');
+  Array.prototype.forEach.call(cards,function(el,i){
+    el.style.transitionDelay = (hiding ? i*45 : i*60)+'ms';
+  });
+}
+function setDocked(on){
+  if (on === DOCK.on) return;
+  DOCK.on = on;
+  staggerMainCards(on);
+  $('summaryCards').classList.toggle('docked-away',on);
+  if (on){
+    clearTimeout(DOCK.timer);
+    buildDockCards();
+    DOCK.sig = dockSignature();
+    playDockIn();
+  } else {
+    playDockOut();
+  }
+}
+function evaluateDock(){
+  if (!DATA || !dockEnabled()){ setDocked(false); return; }
+  var cards = $('summaryCards'), header = $('mainHeader');
+  if (!cards || !header) return;
+  var cr = cards.getBoundingClientRect(), hr = header.getBoundingClientRect();
+  if (!DOCK.on && cr.bottom <= hr.bottom + 2){ setDocked(true); return; }
+  if (DOCK.on && cr.bottom > hr.bottom + 30){ setDocked(false); return; }
+  if (DOCK.on){
+    positionDock();
+    if (DOCK.sig !== dockSignature()){
+      buildDockCards();
+      DOCK.sig = dockSignature();
+      playDockIn();
+    }
+  }
+}
+function queueDockCheck(){
+  if (DOCK.tick) return;
+  DOCK.tick = true;
+  requestAnimationFrame(function(){ DOCK.tick = false; evaluateDock(); });
+}
+window.addEventListener('scroll',queueDockCheck,{ passive:true });
+window.addEventListener('resize',queueDockCheck);
+function paintTypeSeg(){
+  Array.prototype.forEach.call($('segType').children,function(b){
+    var on = PREF.types.indexOf(b.getAttribute('data-v')) >= 0;
+    b.classList.toggle('on',on);
+    b.setAttribute('aria-pressed',on ? 'true' : 'false');
+  });
+}
+Array.prototype.forEach.call($('segType').children,function(b){
+  b.onclick = function(){
+    var type = b.getAttribute('data-v');
+    var i = PREF.types.indexOf(type);
+    if (i >= 0) {
+      if (PREF.types.length === 1) return;
+      PREF.types.splice(i,1);
+    } else {
+      PREF.types.push(type);
+    }
+    lsSet('prefs',PREF);
+    paintTypeSeg();
+    render();
+  };
+});
+paintTypeSeg();
+/* ================= PDF ================= */
+var PDF_DPI = 96, PDF_MARGIN = 0.5, PDF_BAR = 400, PDF_PCT = 58;
+var PDF_LIBRARY_URLS = {
+  html2canvas:[
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+  ],
+  jspdf:[
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+  ]
+};
+function paperSpec(paper){
+  if (paper === 'letter') return { format:'letter', width:8.5, height:11 };
+  if (paper === 'long') return { format:[8.5,13], width:8.5, height:13 };
+  return { format:'a4', width:210/25.4, height:297/25.4 };
+}
+function pdfSheetWidth(paper){ return Math.floor((paperSpec(paper).width-PDF_MARGIN*2)*PDF_DPI); }
+function pdfSheetHeight(paper){ return Math.floor((paperSpec(paper).height-PDF_MARGIN*2)*PDF_DPI); }
+function pdfBar(pct){
+  var w = pct === null ? 0 : Math.max(0,Math.min(100,pct));
+  return '<div style="flex:0 0 '+PDF_BAR+'px;width:'+PDF_BAR+'px;min-width:'+PDF_BAR+'px;box-sizing:border-box;'+
+    'height:8px;background:#eaeff7;border-radius:4px;overflow:hidden"><div style="height:8px;width:'+
+    w.toFixed(1)+'%;background:'+BAND_HEX[band(pct)]+';border-radius:4px"></div></div>';
+}
+function pdfPct(pct,size){
+  return '<div style="flex:0 0 '+PDF_PCT+'px;width:'+PDF_PCT+'px;min-width:'+PDF_PCT+'px;box-sizing:border-box;'+
+    'text-align:right;font-family:Barlow Condensed,Arial,sans-serif;font-weight:700;font-size:'+size+'px;color:'+
+    BAND_HEX[band(pct)]+'">'+(pct === null ? '—' : n1(pct)+'%')+'</div>';
+}
+function pdfRow(o){
+  return '<div class="pdf-row" style="display:flex;width:100%;box-sizing:border-box;align-items:center;gap:10px;'+
+    'padding:5px 10px 5px '+o.indent+'px;background:'+o.bg+';border-left:4px solid '+o.rail+';'+
+    'border-bottom:1px solid #eef2f8">'+
+      '<div style="flex:1 1 0;min-width:0;overflow:hidden"><div style="'+o.titleCss+'">'+o.title+'</div>'+
+        (o.meta?'<div style="font-size:8.5px;color:#5c6b82;margin-top:2px;line-height:1.3">'+o.meta+'</div>':'')+
+      '</div>'+pdfBar(o.pct)+pdfPct(o.pct,o.pctSize)+'</div>';
+}
+function pdfHeadMarkup(titleHtml,contextText,pct,stats){
+  var recordParts = [];
+  if (PREF.types.indexOf('waterway') >= 0) recordParts.push(typeCountLabel('waterway',stats.waterways));
+  if (PREF.types.indexOf('drainage') >= 0) recordParts.push(typeCountLabel('drainage',stats.drainages));
+  if (PREF.types.indexOf('isf') >= 0) recordParts.push(typeCountLabel('isf',stats.isf));
+  return '<div class="pdf-head" style="display:flex;width:100%;box-sizing:border-box;align-items:center;'+
+    'justify-content:space-between;gap:14px;padding:14px 16px;border-radius:10px;color:#fff;margin-bottom:10px;'+
+    'background:linear-gradient(135deg,#061d43 0%,#082c66 55%,#0D47A1 100%)">'+
+      '<div style="flex:1 1 0;min-width:0">'+
+        '<div style="font-family:Barlow Condensed,Arial,sans-serif;font-weight:700;font-size:27px;line-height:1;'+
+          'text-transform:uppercase">Accomplishment of <span style="color:#F89535">'+titleHtml+'</span></div>'+
+        '<div style="font-size:10px;color:#dbe6fa;margin-top:6px;line-height:1.4">Oplan Kontra Baha · Dredging and desilting accomplishment on every waterway.</div>'+
+        '<div style="font-size:9px;color:#cfe0ff;margin-top:4px;line-height:1.4">'+esc(contextText)+'</div>'+
+      '</div>'+
+      '<div style="flex:0 0 auto;box-sizing:border-box;text-align:center;border-radius:10px;padding:10px 16px;'+
+        'background:linear-gradient(135deg,#F26522,#d34e12)">'+
+        '<div style="font-family:Barlow Condensed,Arial,sans-serif;font-weight:700;font-size:31px;line-height:.9">'+
+          (pct === null ? '—' : n1(pct)+'%')+'</div>'+
+        '<div style="font-size:8.5px;margin-top:5px">'+recordParts.join(' · ')+'</div>'+
+      '</div></div>';
+}
+function pdfHeader(r){
+  return pdfHeadMarkup(esc(regionDocumentTitle(r).replace(/^Accomplishment of\s+/i,'')),
+    contextLineForRegion(r),r.a.pct,treeStats([r]));
+}
+function contextLineAll(){
+  var modeTxt = PREF.mode === 'wtd' ? 'weighted by planned volume' : 'simple average';
+  var filterTxt = PREF.filter === 'target' ? 'records with a planned target only'
+                : PREF.filter === 'zero' ? '0 target / 0 accomplishment removed'
+                : 'all matching records';
+  return dashboardRegionTitle()+' · '+modeTxt+' · '+filterTxt+' · '+selectedTypeText();
+}
+function pdfHeaderAll(tree){
+  var allWays = [];
+  tree.forEach(function(r){ allWays = allWays.concat(r.ways); });
+  return pdfHeadMarkup(esc(dashboardRegionTitle()),contextLineAll(),agg(allWays).pct,treeStats(tree));
+}
+function pdfDocumentTitleAll(){ return 'Accomplishment of '+dashboardRegionTitle(); }
+function pdfSummaryCards(tree){
+  var s = treeStats(tree);
+  var date = dataDateParts(DATA && DATA.generatedAt);
+  var cards = [
+    { label:'Data as of',value:date.date,detail:date.time,accent:'#F26522',wide:true }
+  ];
+  if (s.regions !== 1) cards.push({ label:'Regions',value:s.regions,accent:'#0D47A1' });
+  if (s.sites !== 1) cards.push({ label:'Sites',value:s.sites,accent:'#3387c9' });
+  var pdfWays = [];
+  tree.forEach(function(r){ pdfWays = pdfWays.concat(r.ways); });
+  var pdfVol = volumeTotals(pdfWays);
+  if (pdfVol.acc || pdfVol.plan) cards.push({ label:'m³ accomplished',value:compactVolume(pdfVol.acc),detail:'of '+compactVolume(pdfVol.plan)+' m³',accent:'#a8730a' });
+  if (PREF.types.indexOf('waterway') >= 0) cards.push({ label:'Waterways',value:s.waterways,accent:'#061d43' });
+  if (PREF.types.indexOf('drainage') >= 0) cards.push({ label:'Drainages',value:s.drainages,accent:'#1d7a4c' });
+  if (PREF.types.indexOf('isf') >= 0) cards.push({ label:'ISF',value:s.isf,accent:'#167b83' });
+  var gap = 7;
+  var totalGap = gap*(cards.length-1);
+  var width = Math.floor((pdfSheetWidth('a4')-totalGap)/cards.length);
+  return '<div class="pdf-summary" style="display:flex;width:100%;box-sizing:border-box;gap:'+gap+'px;margin:0 0 9px;justify-content:flex-start">'+
+    cards.map(function(c){
+      return '<div style="position:relative;flex:1 1 0;min-width:0;height:100px;overflow:hidden;'+
+        'display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:12px 8px 8px;border:1px solid '+c.accent+';'+
+        'border-radius:9px;background:#fff;text-align:center">'+
+        '<div style="position:absolute;inset:0 0 auto;height:4px;background:'+c.accent+'"></div>'+
+        '<div style="min-width:0">'+
+          '<div style="font-family:Barlow Semi Condensed,Arial,sans-serif;font-size:7px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5c6b82;margin-bottom:4px">'+c.label+'</div>'+
+          '<div style="font-family:Barlow Condensed,Arial,sans-serif;font-size:'+(c.wide?'17':'30')+'px;font-weight:700;line-height:1;color:'+c.accent+';overflow-wrap:anywhere">'+esc(c.value)+'</div>'+
+          (c.detail?'<div style="font-family:Barlow Semi Condensed,Arial,sans-serif;font-size:8px;font-weight:600;color:#122238;margin-top:4px">'+esc(c.detail)+'</div>':'')+
+        '</div></div>';
+    }).join('')+'</div>';
+}
+function pdfRegionRow(r){
+  return pdfRow({
+    indent:10,bg:'#f1f5fc',rail:'#0D47A1',pct:r.a.pct,pctSize:14,
+    titleCss:'font-family:Barlow Condensed,Arial,sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;color:#122238;line-height:1.15',
+    title:esc(r.n),
+    meta:r.sites.length+' sites · '+rowMeta(r.ways)
+  });
+}
+function pdfSiteRow(s,continued){
+  return pdfRow({
+    indent:26,bg:'#fbfcfe',rail:'#a9c0e2',pct:s.a.pct,pctSize:12,
+    titleCss:'font-weight:600;font-size:11.5px;color:#122238;line-height:1.2',
+    title:esc(s.n)+(continued?' <span style="font-size:8px;color:#5c6b82">(continued)</span>':''),
+    meta:rowMeta(s.w)
+  });
+}
+function pdfWayRow(w,r,s){
+  return pdfRow({
+    indent:44,bg:'#ffffff',rail:'#e7edf6',pct:wayPct(w),pctSize:10.5,
+    titleCss:'font-weight:500;font-size:10px;color:#122238;line-height:1.25',
+    title:esc(cleanWaterwayName(w,r,s)),meta:wayMeta(w,r,s)
+  });
+}
+function htmlElement(markup){
+  var box = document.createElement('div');
+  box.innerHTML = markup;
+  return box.firstElementChild;
+}
+function newPdfPage(stage,r,width,height){
+  var page = document.createElement('section');
+  page.className = 'okb-pdf-page';
+  page.style.cssText = 'display:block;width:'+width+'px;height:'+height+'px;box-sizing:border-box;overflow:hidden;'+
+    'margin:0;padding:0;background:#fff;font-family:Inter,Arial,sans-serif;color:#122238;';
+  page.appendChild(htmlElement(pdfHeader(r)));
+  page.appendChild(htmlElement(pdfSummaryCards([r])));
+  var body = document.createElement('div');
+  body.style.cssText = 'width:100%;box-sizing:border-box;border:1px solid #dfe5ee;';
+  body.appendChild(htmlElement(pdfRegionRow(r)));
+  page.appendChild(body);
+  stage.appendChild(page);
+  return { page:page, body:body, region:r, title:regionDocumentTitle(r) };
+}
+/* Collapsed list: one continuous document, region rows only. */
+function newPdfSummaryPage(stage,tree,width,height){
+  var page = document.createElement('section');
+  page.className = 'okb-pdf-page';
+  page.style.cssText = 'display:block;width:'+width+'px;height:'+height+'px;box-sizing:border-box;overflow:hidden;'+
+    'margin:0;padding:0;background:#fff;font-family:Inter,Arial,sans-serif;color:#122238;';
+  page.appendChild(htmlElement(pdfHeaderAll(tree)));
+  page.appendChild(htmlElement(pdfSummaryCards(tree)));
+  var body = document.createElement('div');
+  body.style.cssText = 'width:100%;box-sizing:border-box;border:1px solid #dfe5ee;';
+  page.appendChild(body);
+  stage.appendChild(page);
+  return { page:page, body:body, region:null, title:pdfDocumentTitleAll() };
+}
+function pageOverflows(page){ return page.scrollHeight > page.clientHeight+1; }
+function pdfOpenRegion(r){ return !!(SEARCH || OPEN['R:'+r.key]); }
+function pdfOpenSite(r,s){ return !!(SEARCH || OPEN['R:'+r.key+'|S:'+s.n]); }
+function buildPdfPages(paper){
+  var tree = visibleTree();
+  var width = pdfSheetWidth(paper), height = pdfSheetHeight(paper);
+  var stage = document.createElement('div');
+  stage.id = 'okbPdfStage';
+  stage.style.cssText = 'position:fixed;left:-100000px;top:0;width:'+width+'px;z-index:-1;background:#fff;';
+  document.body.appendChild(stage);
+  var pages = [];
+
+  /* Nothing expanded on screen: print the collapsed list as one flowing
+     document instead of giving every region its own page. */
+  var anyExpanded = false;
+  tree.forEach(function(r){ if (pdfOpenRegion(r)) anyExpanded = true; });
+  if (!anyExpanded){
+    var cursor = 0;
+    while (cursor < tree.length){
+      var sheet = newPdfSummaryPage(stage,tree,width,height);
+      pages.push(sheet);
+      var placed = 0;
+      while (cursor < tree.length){
+        var row = htmlElement(pdfRegionRow(tree[cursor]));
+        sheet.body.appendChild(row);
+        if (pageOverflows(sheet.page)){ sheet.body.removeChild(row); break; }
+        cursor++; placed++;
+      }
+      if (placed === 0){
+        sheet.body.appendChild(htmlElement(pdfRegionRow(tree[cursor])));
+        cursor++;
+      }
+    }
+    return { stage:stage,pages:pages };
+  }
+
+  /* Something is expanded: a page per region, carrying only the open levels. */
+  tree.forEach(function(r){
+    var items = [];
+    if (pdfOpenRegion(r)){
+      r.sites.forEach(function(s){
+        items.push({ type:'site',site:s });
+        if (pdfOpenSite(r,s)) s.w.forEach(function(w){ items.push({ type:'way',site:s,way:w }); });
+      });
+    }
+    if (!items.length){
+      pages.push(newPdfPage(stage,r,width,height));   /* collapsed region: header row only */
+      return;
+    }
+    var cursor = 0;
+    while (cursor < items.length){
+      var built = newPdfPage(stage,r,width,height);
+      pages.push(built);
+      var added = 0;
+      if (items[cursor].type === 'way'){
+        var repeated = htmlElement(pdfSiteRow(items[cursor].site,true));
+        built.body.appendChild(repeated);
+      }
+      while (cursor < items.length){
+        var item = items[cursor];
+        var node = htmlElement(item.type === 'site' ? pdfSiteRow(item.site,false) : pdfWayRow(item.way,r,item.site));
+        built.body.appendChild(node);
+        if (pageOverflows(built.page)){
+          built.body.removeChild(node);
+          break;
+        }
+        cursor++;
+        added++;
+      }
+      if (added > 0 && cursor < items.length && items[cursor-1] && items[cursor-1].type === 'site'){
+        built.body.removeChild(built.body.lastElementChild);
+        cursor--;
+        added--;
+      }
+      if (added === 0){
+        var forcedItem = items[cursor];
+        built.body.appendChild(htmlElement(forcedItem.type === 'site' ? pdfSiteRow(forcedItem.site,false) : pdfWayRow(forcedItem.way,r,forcedItem.site)));
+        cursor++;
+      }
+    }
+  });
+  return { stage:stage,pages:pages };
+}
+function loadOneLibrary(urls,test,done){
+  if (test()) { done(null); return; }
+  var i = 0;
+  (function attempt(){
+    if (i >= urls.length) { done(new Error('library')); return; }
+    var s = document.createElement('script');
+    s.src = urls[i++];
+    s.onload = function(){ if (test()) done(null); else attempt(); };
+    s.onerror = attempt;
+    document.head.appendChild(s);
+  })();
+}
+function loadPdfLibs(done){
+  loadOneLibrary(PDF_LIBRARY_URLS.html2canvas,function(){ return !!window.html2canvas; },function(e){
+    if (e) { done(e); return; }
+    loadOneLibrary(PDF_LIBRARY_URLS.jspdf,function(){ return !!(window.jspdf && window.jspdf.jsPDF); },done);
+  });
+}
+function pdfName(){
+  var d = new Date(),p = function(x){ return (x<10?'0':'')+x; };
+  var tag = PREF.regions.length === 1 ? '_'+PREF.regions[0].replace(/[^A-Za-z0-9]+/g,'') : '';
+  return 'OKB_Accomplishment'+tag+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.pdf';
+}
+function setPdfButtonBusy(busy,text){
+  var button = $('pdfBtn');
+  var label = busy ? (text || 'Preparing PDF…') : 'Download PDF (A4). Right-click for paper options.';
+  button.disabled = busy;
+  button.classList.toggle('is-busy',busy);
+  button.setAttribute('aria-busy',busy ? 'true' : 'false');
+  button.setAttribute('aria-label',label);
+  button.title = label;
+  button.innerHTML = actionIcon(busy ? 'refresh' : 'download')+'<span>PDF</span>';
+}
+function downloadPdf(paper){
+  if (!DATA || $('pdfBtn').disabled) return;
+  var tree = visibleTree();
+  if (!tree.length){ showErr('There is nothing to export with the current filters.'); return; }
+  closePdfMenu();
+  setPdfButtonBusy(true,'Preparing…');
+  loadPdfLibs(function(err){
+    if (err){
+      setPdfButtonBusy(false);
+      showErr('The PDF builder could not be loaded. Check the internet connection and try again.');
+      return;
+    }
+    var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    ready.then(function(){
+      var built;
+      try { built = buildPdfPages(paper); }
+      catch(e){
+        setPdfButtonBusy(false);
+        showErr('The PDF layout could not be prepared: '+(e && e.message ? e.message : e));
+        return;
+      }
+      var pages = built.pages;
+      var spec = paperSpec(paper);
+      var jsPDF = window.jspdf.jsPDF;
+      var pdf = new jsPDF({ unit:'in',format:spec.format,orientation:'portrait',compress:true });
+      var usableW = spec.width-PDF_MARGIN*2, usableH = spec.height-PDF_MARGIN*2;
+      var scale = pages.length > 45 ? 1.25 : pages.length > 20 ? 1.5 : 2;
+      setPdfButtonBusy(true,'Building '+pages.length+' page'+(pages.length===1?'':'s')+'…');
+      var chain = Promise.resolve();
+      pages.forEach(function(info,index){
+        chain = chain.then(function(){
+          return window.html2canvas(info.page,{
+            scale:scale,backgroundColor:'#ffffff',useCORS:true,logging:false,
+            width:info.page.clientWidth,height:info.page.clientHeight,
+            windowWidth:info.page.clientWidth,windowHeight:info.page.clientHeight,
+            scrollX:0,scrollY:0
+          }).then(function(canvas){
+            if (index > 0) pdf.addPage(spec.format,'portrait');
+            pdf.addImage(canvas.toDataURL('image/jpeg',0.96),'JPEG',PDF_MARGIN,PDF_MARGIN,usableW,usableH,undefined,'FAST');
+            canvas.width = 1; canvas.height = 1;
+          });
+        });
+      });
+      chain.then(function(){
+        var total = pages.length;
+        var titleTotals = {},titleSeen = {};
+        pages.forEach(function(info){
+          titleTotals[info.title] = (titleTotals[info.title] || 0)+1;
+        });
+        for (var i=0;i<total;i++){
+          var t = pages[i].title;
+          titleSeen[t] = (titleSeen[t] || 0)+1;
+          pdf.setPage(i+1);
+          pdf.setFont('helvetica','normal');
+          pdf.setFontSize(8);
+          pdf.setTextColor(92,107,130);
+          pdf.text(t+' | Page '+titleSeen[t]+' of '+titleTotals[t],
+            spec.width/2,spec.height-PDF_MARGIN/2,{ align:'center',baseline:'middle' });
+        }
+        pdf.save(pdfName());
+        if (built.stage.parentNode) built.stage.parentNode.removeChild(built.stage);
+        setPdfButtonBusy(false);
+      })['catch'](function(e){
+        if (built.stage && built.stage.parentNode) built.stage.parentNode.removeChild(built.stage);
+        setPdfButtonBusy(false);
+        showErr('The PDF could not be built: '+(e && e.message ? e.message : e));
+      });
+    });
+  });
+}
+$('pdfBtn').onclick = function(){ downloadPdf('a4'); };
+$('pdfBtn').oncontextmenu = function(e){
+  e.preventDefault();
+  if (!DATA || $('pdfBtn').disabled) return;
+  var menu = $('pdfMenu');
+  menu.classList.add('open');
+  menu.style.left = '0px'; menu.style.top = '0px';
+  var w = menu.offsetWidth,h = menu.offsetHeight;
+  menu.style.left = Math.max(8,Math.min(e.clientX,window.innerWidth-w-8))+'px';
+  menu.style.top = Math.max(8,Math.min(e.clientY,window.innerHeight-h-8))+'px';
+};
+function closePdfMenu(){ $('pdfMenu').classList.remove('open'); }
+Array.prototype.forEach.call($('pdfMenu').querySelectorAll('[data-paper]'),function(b){
+  b.onclick = function(){ downloadPdf(b.getAttribute('data-paper')); };
+});
+document.addEventListener('click',function(e){
+  if (!$('pdfMenu').contains(e.target) && e.target !== $('pdfBtn')) closePdfMenu();
+});
+window.addEventListener('blur',closePdfMenu);
+/* ================= CSV ================= */
+function csvText(v){
+  var s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+}
+function csvNumber(v){
+  if (v === null || v === undefined || v === '') return '';
+  var n = Number(v);
+  return isFinite(n) ? String(n) : csvText(v);
+}
+function typeWord(w){
+  var k = recordTypeKey(w);
+  return k === 'isf' ? 'ISF' : k === 'drainage' ? 'Drainage' : 'Waterway';
+}
+function buildCsvText(){
+  var lines = [['Region','Site','Waterway','Type','Target Volume','Accomplished Volume','% Accomplishment','Status']
+    .map(csvText).join(',')];
+  visibleTree().forEach(function(r){
+    r.sites.forEach(function(s){
+      s.w.forEach(function(w){
+        var pct = wayPct(w);
+        lines.push([
+          csvText(r.n),csvText(s.n),csvText(w.n),csvText(typeWord(w)),
+          csvNumber(w.p),csvNumber(w.v),
+          pct === null ? '' : n1(pct)+'%',csvText(statusText(w.s))
+        ].join(','));
+      });
+    });
+  });
+  return '\ufeff'+lines.join('\r\n');
+}
+function csvName(){
+  var d = new Date(),p = function(x){ return (x<10?'0':'')+x; };
+  var tag = PREF.regions.length === 1 ? '_'+PREF.regions[0].replace(/[^A-Za-z0-9]+/g,'') : '';
+  return 'OKB_Accomplishment'+tag+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.csv';
+}
+$('csvBtn').onclick = function(){
+  if (!DATA) return;
+  var csv = buildCsvText();
+  if (csv.indexOf('\r\n') < 0){ showErr('There is nothing to export with the current filters.'); return; }
+  var blob = new Blob([csv],{ type:'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = csvName(); a.style.display = 'none';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+};
+function wireSeg(id,key){
+  Array.prototype.forEach.call($(id).children,function(b){
+    b.onclick = function(){
+      PREF[key] = b.getAttribute('data-v');
+      lsSet('prefs',PREF);
+      paintSeg();
+      render();
+    };
+  });
+}
+function paintSeg(){
+  [['segMode','mode'],['segFilter','filter']].forEach(function(p){
+    Array.prototype.forEach.call($(p[0]).children,function(b){
+      var on = b.getAttribute('data-v') === PREF[p[1]];
+      b.classList.toggle('on',on);
+      b.setAttribute('aria-pressed',on ? 'true' : 'false');
+    });
+  });
+}
+wireSeg('segMode','mode');
+wireSeg('segFilter','filter');
+paintSeg();
+/* ================= server =================
+   This page lives on GitHub Pages (oplankontrabaha/accomplishments). The
+   Apps Script web app is only its server, and google.script.run exists only
+   on pages Apps Script serves itself. So every call is one POST to the /exec
+   link carrying { fn, args }, answered with { ok:true, result } or
+   { ok:false, error }. Accomplishment.gs answers only the functions listed
+   in its API_FUNCTIONS.
+   The body goes as text/plain on purpose: that keeps it a "simple" request
+   with no CORS pre-check, which Apps Script cannot answer. */
+var API_URL = 'https://script.google.com/macros/s/AKfycbz1kQCWGVdYrQBPTt222lHmjIplh-wH7EAHQMCHgG8wsr6IOQHJurwg_HbALU0UuCu0/exec';
+/* reads are safe to send again when the network drops one */
+var API_RETRY = { getLoginRegions:1, resumeSession:1, getRegionDashboard:1, getVipDashboard:1 };
+var API_TIMEOUT_MS = 120000;
+function hasAppsScript(){
+  return typeof google !== 'undefined' && google.script && google.script.run;
+}
+async function apiFetch(fn,args,retries){
+  var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = ctl ? setTimeout(function(){ ctl.abort(); },API_TIMEOUT_MS) : 0;
+  var res, text;
+  try {
+    res = await fetch(API_URL,{
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body:JSON.stringify({ fn:fn,args:args }),
+      redirect:'follow',cache:'no-store',credentials:'omit',
+      signal:ctl ? ctl.signal : undefined
+    });
+    text = await res.text();
+  } catch(err){
+    clearTimeout(timer);
+    if (retries > 0){ await new Promise(function(r){ setTimeout(r,1200); }); return apiFetch(fn,args,retries-1); }
+    throw new Error(err && err.name === 'AbortError'
+      ? 'The OKB server took too long to answer. Please try again.'
+      : 'Could not reach the OKB server. Please check the internet connection and try again.');
+  }
+  clearTimeout(timer);
+  var reply = null;
+  try { reply = JSON.parse(text); } catch(e){ reply = null; }
+  if (!reply || typeof reply !== 'object'){
+    /* Apps Script answers with an HTML page when it is busy or over a daily limit */
+    if (retries > 0){ await new Promise(function(r){ setTimeout(r,1500); }); return apiFetch(fn,args,retries-1); }
+    throw new Error(res.ok
+      ? 'The OKB server sent a reply this page could not read. Please try again in a moment.'
+      : 'The OKB server is not available right now (error '+res.status+'). Please try again in a moment.');
+  }
+  if (reply.ok !== true) throw new Error(reply.error || 'The OKB server could not complete the request.');
+  return reply.result;
+}
+/* One way to call the server, wherever the page happens to be served from. */
+function server(fn){
+  var args = Array.prototype.slice.call(arguments,1);
+  if (hasAppsScript()){
+    return new Promise(function(resolve,reject){
+      var runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(e){ reject(new Error(e && e.message ? e.message : String(e))); });
+      runner[fn].apply(runner,args);
+    });
+  }
+  return apiFetch(fn,args,API_RETRY[fn] ? 1 : 0);
+}
+var FETCH_SEQ = 0;
+function setRefreshButtonBusy(busy,text){
+  var button = $('refresh');
+  var label = busy ? (text || 'Loading data…') : 'Refresh data';
+  button.disabled = busy;
+  button.classList.toggle('is-busy',busy);
+  button.setAttribute('aria-busy',busy ? 'true' : 'false');
+  button.setAttribute('aria-label',label);
+  button.title = label;
+}
+function setStatus(t){ $('summaryCards').title = t || ''; }
+function showErr(m){ $('err').textContent = m; $('err').classList.remove('hide'); }
+function describe(d,extra){
+  var s = d.stats || {};
+  return 'Data as of '+d.generatedAt+' · '+s.regions+' regions · '+s.sites+' sites · '+s.waterways+
+    ' waterways · '+(s.drainages||0)+' drainage records · '+(s.noAccomplishmentRow||0)+
+    ' records with no accomplishment row · progress read as '+(d.scale === 'fraction' ? '0–1' : '0–100')+
+    (extra ? ' · '+extra : '');
+}
+function onData(d,live){
+  if (d && d.ok === false && d.sessionInvalid){
+    setRefreshButtonBusy(false);
+    lockApp(d.error || 'Your session has expired. Please sign in again.');
+    return;
+  }
+  if (!d || !d.ok){ showErr('The dashboard could not read the sheets.'); setRefreshButtonBusy(false); return; }
+  d.regions = sortRegions(d.regions);
+  DATA = d;
+  /* each answered call slides the ten-minute window forward */
+  if (live) saveSession();
+  if (live) lsSet('snapshot.alltypes',{ at:new Date().toISOString(),d:d });
+  setStatus(describe(d,live ? (d.fromCache ? 'from server cache' : 'freshly built') : 'saved copy on this device'));
+  buildPills();
+  render();
+  setRefreshButtonBusy(false);
+}
+function fetchData(force){
+  if (!TOKEN){ lockApp(); return; }
+  var seq = ++FETCH_SEQ;
+  setRefreshButtonBusy(true,force ? 'Rebuilding data…' : 'Loading data…');
+  server('getRegionDashboard',TOKEN,!!force)
+    .then(function(d){ if (seq === FETCH_SEQ) onData(d,true); })
+    ['catch'](function(e){
+      if (seq !== FETCH_SEQ) return;
+      showErr(e && e.message ? e.message : String(e));
+      setRefreshButtonBusy(false);
+      if (!DATA){
+        $('tree').innerHTML = '<div class="empty">Nothing to show yet.</div>';
+        $('statAsOfDate').textContent = '—';
+        $('statAsOfTime').textContent = 'Unavailable';
+        setStatus('');
+      }
+    });
+}
+$('refresh').onclick = function(){ fetchData(true); };
+
+/* ================= login gate =================
+   Only the server-issued token is kept on the device, stamped with an
+   absolute expiry ten minutes out. The password is never stored, the stamp
+   is a ceiling and not a permission, and the server still has to agree the
+   session is live before anything is unlocked. */
+var TOKEN = null;
+var LOGIN_REGION = '';
+var APP_STARTED = false;
+var SIGN_START = 0;
+var SESSION_WINDOW_MS = 10 * 60 * 1000;
+var TOKEN_SHAPE = /^[0-9a-fA-F-]{20,60}$/;
+
+function now(){
+  try { return performance.now(); } catch(e){ return Date.now(); }
+}
+function saveSession(){
+  if (!TOKEN) return;
+  lsSet('session',{ t:TOKEN, r:LOGIN_REGION, exp:Date.now() + SESSION_WINDOW_MS });
+}
+function clearSession(){
+  try { localStorage.removeItem(LS + 'session'); } catch(e){}
+}
+function loadSession(){
+  var s = lsGet('session');
+  if (!s || !s.t || !s.exp) return null;
+  if (!TOKEN_SHAPE.test(String(s.t))){ clearSession(); return null; }
+  if (Date.now() > Number(s.exp)){ clearSession(); return null; }
+  return s;
+}
+
+function loginMsg(text){
+  var box = $('loginMsg');
+  if (!text){ box.classList.remove('show'); box.textContent = ''; return; }
+  box.textContent = text;
+  box.classList.add('show');
+}
+function setLoginBusy(busy){
+  if (busy && !document.body.classList.contains('signing')) SIGN_START = now();
+  document.body.classList.toggle('signing',busy);
+  $('loginBtn').disabled = busy;
+  $('loginPass').disabled = busy;
+  $('loginBtn').textContent = busy ? 'Signing in…' : 'Sign in';
+}
+/* The region list is fixed, so the login screen never waits on the server.
+   Only the password check goes to the backend. */
+var LOGIN_REGIONS = [
+  { v:'CAR',      t:'Cordillera Administrative Region' },
+  { v:'NCR',      t:'National Capital Region' },
+  { v:'I',        t:'Region I — Ilocos' },
+  { v:'II',       t:'Region II — Cagayan Valley' },
+  { v:'III',      t:'Region III — Central Luzon' },
+  { v:'IV-A',     t:'Region IV-A — CALABARZON' },
+  { v:'MIMAROPA', t:'MIMAROPA Region' },
+  { v:'V',        t:'Region V — Bicol' },
+  { v:'VI',       t:'Region VI — Western Visayas' },
+  { v:'NIR',      t:'Negros Island Region' },
+  { v:'VII',      t:'Region VII — Central Visayas' },
+  { v:'VIII',     t:'Region VIII — Eastern Visayas' },
+  { v:'IX',       t:'Region IX — Zamboanga Peninsula' },
+  { v:'X',        t:'Region X — Northern Mindanao' },
+  { v:'XI',       t:'Region XI — Davao' },
+  { v:'XII',      t:'Region XII — SOCCSKSARGEN' },
+  { v:'XIII',     t:'Region XIII — Caraga' },
+  { v:'BARMM',    t:'Bangsamoro Autonomous Region in Muslim Mindanao' }
+];
+function paintLoginRegions(){
+  Array.prototype.forEach.call($('loginRegions').children,function(b){
+    if (!b.getAttribute) return;
+    b.classList.toggle('on',b.getAttribute('data-r') === LOGIN_REGION);
+  });
+}
+function buildLoginRegions(){
+  $('loginRegions').innerHTML = LOGIN_REGIONS.map(function(r){
+    return '<button type="button" data-r="'+esc(r.v)+'" title="'+esc(r.t)+'">'+esc(r.v)+'</button>';
+  }).join('');
+  Array.prototype.forEach.call($('loginRegions').children,function(b,i){
+    /* a custom property, not an inline animation-delay, so the press
+       bounce is never pushed behind the entrance delay */
+    b.style.setProperty('--d',(0.34+i*0.018).toFixed(3)+'s');
+    b.onclick = function(){
+      LOGIN_REGION = b.getAttribute('data-r');
+      lsSet('loginRegion',LOGIN_REGION);
+      b.classList.remove('pressed');
+      void b.offsetWidth;            /* restart the bounce on a repeat tap */
+      b.classList.add('pressed');
+      paintLoginRegions();
+      loginMsg('');
+    };
+    b.addEventListener('animationend',function(){ b.classList.remove('pressed'); });
+  });
+  var saved = lsGet('loginRegion');
+  for (var i=0;i<LOGIN_REGIONS.length;i++){
+    if (LOGIN_REGIONS[i].v === saved){ LOGIN_REGION = saved; break; }
+  }
+  paintLoginRegions();
+}
+function playGateEntrance(){
+  var gate = $('loginGate');
+  gate.classList.remove('enter');
+  void gate.offsetWidth;             /* rewind so a re-lock replays it */
+  gate.classList.add('enter');
+}
+buildLoginRegions();
+
+/* ================= reveal =================
+   Where the revolving light is at this instant. The orbit is a 1.15s linear
+   turn and the bright tip of the cone sits at 350deg, so the angle is plain
+   arithmetic on the elapsed time — no reading back a live transform. The
+   point is then pushed out to the card's edge, because the light rides the
+   ring of a rounded rectangle, not a circle. */
+function orbitPoint(){
+  var frame = document.querySelector('.login-frame');
+  if (!frame || !SIGN_START) return null;
+  var r = frame.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  var turn = ((now() - SIGN_START) % 1150) / 1150;
+  var a = (((turn * 360) + 350) % 360) * Math.PI / 180;   /* 0 = 12 o'clock, clockwise */
+  var dx = Math.sin(a), dy = -Math.cos(a);
+  var hw = r.width / 2, hh = r.height / 2;
+  var reach = Math.min(
+    Math.abs(dx) > 1e-4 ? hw / Math.abs(dx) : 1e9,
+    Math.abs(dy) > 1e-4 ? hh / Math.abs(dy) : 1e9);
+  return { x:r.left + hw + dx * reach, y:r.top + hh + dy * reach };
+}
+function prefersReducedMotion(){
+  try { return window.matchMedia('(prefers-reduced-motion:reduce)').matches; }
+  catch(e){ return false; }
+}
+/* Hold the masthead at visibility:hidden until the condensed faces are in,
+   so no line of the cascade animates in a fallback font and then reflows. */
+function whenFontsReady(go){
+  var done = false;
+  function run(){ if (done) return; done = true; go(); }
+  var guard = setTimeout(run,1200);
+  try {
+    if (document.fonts && document.fonts.load && window.Promise){
+      window.Promise.all([
+        document.fonts.load('700 44px "Barlow Condensed"'),
+        document.fonts.load('600 11px "Barlow Semi Condensed"'),
+        document.fonts.load('500 13px "Inter"')
+      ]).then(function(){ clearTimeout(guard); run(); },
+              function(){ clearTimeout(guard); run(); });
+      return;
+    }
+  } catch(e){}
+  if (document.readyState === 'complete'){ clearTimeout(guard); run(); }
+  else window.addEventListener('load',function(){ clearTimeout(guard); run(); });
+}
+function landStar(){
+  var b = document.body;
+  if (b.classList.contains('rule-hit')) return;
+  b.classList.remove('starring','rule-hold');
+  b.classList.add('rule-hit');
+}
+/* The light leaves the ring as a comet, arcs across, and strikes the left
+   tip of the rule. The path is a quadratic Bezier sampled into keyframes, so
+   the streak stays tangent to its own curve the whole way. */
+/* Where the rule will be once everything has settled. The star is launched
+   while the header is still sliding down, so the live rectangle is read and
+   then the animated offset of every ancestor is subtracted back out —
+   otherwise the comet lands a few pixels above the finished line. */
+function restingBox(el){
+  var r = el.getBoundingClientRect();
+  var ox = 0, oy = 0, node = el;
+  while (node && node !== document.body && node.nodeType === 1){
+    var t = '';
+    try { t = window.getComputedStyle(node).transform || ''; } catch(e){}
+    var m = t && t !== 'none' ? t.match(/matrix(3d)?\(([^)]+)\)/) : null;
+    if (m){
+      var p = m[2].split(',');
+      if (m[1]){ ox += Number(p[12]) || 0; oy += Number(p[13]) || 0; }
+      else { ox += Number(p[4]) || 0; oy += Number(p[5]) || 0; }
+    }
+    node = node.parentElement;
+  }
+  return { left:r.left - ox, top:r.top - oy, height:r.height };
+}
+function flyStar(from){
+  var rule = $('bandRule'), fly = $('starFly');
+  if (!rule || !fly || !fly.animate){ landStar(); return; }
+  var r = restingBox(rule);
+  var to = { x:r.left + 1, y:r.top + r.height / 2 };
+  var dx = to.x - from.x, dy = to.y - from.y;
+  var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  if (dist < 24){ landStar(); return; }
+  var lift = Math.min(96,dist * 0.18);
+  var mx = from.x + dx * 0.5 + (dy / dist) * lift;
+  var my = from.y + dy * 0.5 - (dx / dist) * lift;
+  fly.style.setProperty('--tail',Math.max(70,Math.min(190,dist * 0.42)).toFixed(0) + 'px');
+  document.body.classList.add('starring');
+
+  var frames = [], steps = 18;
+  for (var i = 0; i <= steps; i++){
+    var t = i / steps, u = 1 - t;
+    var x = u * u * from.x + 2 * u * t * mx + t * t * to.x;
+    var y = u * u * from.y + 2 * u * t * my + t * t * to.y;
+    var gx = 2 * (u * (mx - from.x) + t * (to.x - mx));
+    var gy = 2 * (u * (my - from.y) + t * (to.y - my));
+    frames.push({
+      offset: t,
+      opacity: t < 0.08 ? String(t / 0.08) : '1',
+      transform: 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0) rotate(' +
+        (Math.atan2(gy,gx) * 180 / Math.PI).toFixed(2) + 'deg)'
+    });
+  }
+  var flight = 820;
+  var anim;
+  try {
+    anim = fly.animate(frames,{ duration:flight, easing:'cubic-bezier(.3,.05,.15,1)', fill:'forwards' });
+  } catch(e){ landStar(); return; }
+  if (anim) anim.onfinish = landStar;
+  setTimeout(landStar,flight + 160);            /* backstop: the rule never stays at zero */
+}
+/* The cascade itself: masthead, hero, heading, eyebrow, rule, lede, cards. */
+function revealDashboard(from){
+  var b = document.body;
+  var reduced = prefersReducedMotion();
+  var star = !reduced && !!from;
+  b.classList.remove('reveal','rule-auto','rule-hold','rule-hit','starring');
+  if (star) b.classList.add('rule-hold');
+  whenFontsReady(function(){
+    b.classList.remove('fontwait');
+    void b.offsetWidth;                         /* rewind so a re-entry replays it */
+    b.classList.add('reveal');
+    if (star) flyStar(from); else b.classList.add('rule-auto');
+    /* drop the class once it has played, so rows drawn later just appear */
+    setTimeout(function(){ b.classList.remove('reveal'); },2800);
+  });
+}
+function unlockApp(from){
+  document.body.classList.remove('locked','resuming');
+  startApp();
+  revealDashboard(from);
+}
+/* A stored session is checked against the server before anything is shown.
+   The gate stays up, invisible, so a rejected token simply fades it in. */
+function tryResumeSession(){
+  var s = loadSession();
+  if (!s){ playGateEntrance(); return; }
+  if (s.r) LOGIN_REGION = s.r;
+  paintLoginRegions();
+  document.body.classList.add('resuming');
+  var settled = false;
+  function giveUp(message){
+    if (settled) return;
+    settled = true;
+    clearSession();
+    document.body.classList.remove('resuming');
+    playGateEntrance();
+    loginMsg(message || '');
+  }
+  var timer = setTimeout(function(){ giveUp(''); },20000);
+  try {
+    server('resumeSession',s.t)
+      .then(function(res){
+        if (settled) return;
+        clearTimeout(timer);
+        if (res && res.ok){
+          settled = true;
+          TOKEN = s.t;
+          saveSession();
+          unlockApp(null);
+        } else {
+          giveUp('');
+        }
+      })
+      ['catch'](function(){ clearTimeout(timer); giveUp(''); });
+  } catch(e){ clearTimeout(timer); giveUp(''); }
+}
+tryResumeSession();
+/* last-ditch unveil, in case the font check never settles */
+setTimeout(function(){ document.body.classList.remove('fontwait'); },4000);
+
+function doLogin(){
+  var pass = $('loginPass').value;
+  if (!LOGIN_REGION){ loginMsg('Select your region first.'); return; }
+  if (!pass){ loginMsg('Enter your OKB password.'); $('loginPass').focus(); return; }
+  loginMsg('');
+  setLoginBusy(true);
+  server('login',LOGIN_REGION,pass)
+    .then(function(res){
+      if (!res || !res.ok){
+        setLoginBusy(false);
+        loginMsg((res && res.error) || 'Sign in failed.');
+        $('loginPass').select();
+        return;
+      }
+      TOKEN = res.token;
+      saveSession();
+      $('loginPass').value = '';
+      /* read the light's position while it is still on the ring */
+      var from = orbitPoint();
+      setLoginBusy(false);
+      unlockApp(from);
+    })
+    ['catch'](function(e){
+      setLoginBusy(false);
+      loginMsg(e && e.message ? e.message : String(e));
+    });
+}
+$('loginBtn').onclick = doLogin;
+$('loginPass').addEventListener('keydown',function(e){
+  if (e.key === 'Enter'){ e.preventDefault(); doLogin(); }
+});
+
+function lockApp(message){
+  if (TOKEN){
+    try { server('logout',TOKEN)['catch'](function(){}); } catch(e){}
+  }
+  clearSession();
+  TOKEN = null;
+  DATA = null;
+  APP_STARTED = false;
+  setDocked(false);
+  $('tree').innerHTML = '<div class="empty">Loading…</div>';
+  $('regionPills').innerHTML = '';
+  document.body.classList.remove('reveal','rule-auto','rule-hold','rule-hit','starring','resuming');
+  document.body.classList.add('locked');
+  playGateEntrance();
+  loginMsg(message || '');
+}
+function startApp(){
+  if (APP_STARTED) return;
+  APP_STARTED = true;
+  var snap = lsGet('snapshot.alltypes') || lsGet('snapshot.in') || lsGet('snapshot.out') || lsGet('snapshot');
+  if (snap && snap.d) onData(snap.d,false);
+  fetchData(false);
+}
+</script>
+<script>
+(function(){
+  var bg = document.getElementById('bg');
+  if (!bg) return;
+  var DPWH = 'https://lh3.googleusercontent.com/d/15r0-MS1qhh_cizTu42-x8KjHpsMvKzmu';
+  var OKB = 'https://lh3.googleusercontent.com/d/10xNS0UasomLq_n0sWmRpd2ioaGwzB97j';
+  var P = { which:'both',count:16,size:100,opacity:10 };
+  try {
+    var saved = JSON.parse(localStorage.getItem('okbRD.logo')||'null');
+    if (saved){
+      if (saved.which) P.which = saved.which;
+      if (isFinite(saved.count)) P.count = Math.max(0,Math.min(40,Number(saved.count)));
+      if (isFinite(saved.size)) P.size = Math.max(40,Math.min(200,Number(saved.size)));
+      if (isFinite(saved.opacity)) P.opacity = Math.max(0,Math.min(40,Number(saved.opacity)));
+    }
+  } catch(e){}
+  function logoSet(){
+    if (P.which === 'dpwh') return [DPWH];
+    if (P.which === 'okb') return [OKB];
+    return [DPWH,OKB];
+  }
+  var LIFE = 10000,FADE = 1300,parts = [];
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function rnd(a,b){ return a+Math.random()*(b-a); }
+  function vp(){ return { w:window.innerWidth,h:window.innerHeight }; }
+  function now(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function sizeRange(){
+    var v = vp(),scale = P.size/100;
+    var mx = Math.max(58,Math.min(150,Math.min(v.w,v.h)*0.20))*scale;
+    return { min:mx*0.55,max:mx };
+  }
+  function place(o){
+    var v = vp(),sr = sizeRange();
+    for (var a=0;a<50;a++){
+      o.base = rnd(sr.min,sr.max);
+      var r = o.base*0.62;
+      var x = rnd(Math.min(r,v.w/2),Math.max(Math.min(r,v.w/2),v.w-r));
+      var y = rnd(Math.min(r,v.h/2),Math.max(Math.min(r,v.h/2),v.h-r));
+      var ok = true;
+      for (var k=0;k<parts.length;k++){
+        var p = parts[k];
+        if (p===o || p.x==null) continue;
+        var pr = (p.size?p.size/2:p.base/2)+r,dx = x-p.x,dy = y-p.y;
+        if (dx*dx+dy*dy < pr*pr){ ok = false; break; }
+      }
+      if (ok){ o.x = x; o.y = y; return; }
+    }
+    o.x = rnd(o.base,Math.max(o.base,vp().w-o.base));
+    o.y = rnd(o.base,Math.max(o.base,vp().h-o.base));
+  }
+  function seed(o,t,age){
+    var set = logoSet();
+    o.el.src = set[(Math.random()*set.length)|0];
+    o.x = null; o.y = null; place(o);
+    var sp = rnd(.16,.40),ang = rnd(0,Math.PI*2);
+    o.vx = Math.cos(ang)*sp; o.vy = Math.sin(ang)*sp;
+    o.phase = rnd(0,Math.PI*2); o.bSpeed = rnd(.0006,.0012); o.amp = rnd(.08,.16);
+    o.born = t-(age||0); o.age = age||0; o.size = o.base; o.r = o.base/2;
+    return o;
+  }
+  function addPart(t,age){
+    var img = document.createElement('img');
+    img.className = 'floaty'; img.alt = '';
+    img.onerror = function(){ this.style.visibility = 'hidden'; };
+    bg.appendChild(img);
+    var o = { el:img,x:null };
+    parts.push(o); seed(o,t,age||0);
+  }
+  function ensureCount(){
+    var t = now();
+    while (parts.length < P.count) addPart(t,parts.length*(LIFE/Math.max(1,P.count)));
+    while (parts.length > P.count){
+      var rm = parts.pop();
+      if (rm && rm.el && rm.el.parentNode) rm.el.parentNode.removeChild(rm.el);
+    }
+  }
+  function reseedAll(){
+    var t = now();
+    for (var i=0;i<parts.length;i++) seed(parts[i],t,i*(LIFE/Math.max(1,parts.length)));
+  }
+  function paintSettings(){
+    Array.prototype.forEach.call(document.getElementById('segLogos').children,function(b){
+      b.classList.toggle('on',b.getAttribute('data-v') === P.which);
+    });
+    document.getElementById('logoCount').value = P.count;
+    document.getElementById('logoCountOut').textContent = P.count;
+    document.getElementById('logoSize').value = P.size;
+    document.getElementById('logoSizeOut').textContent = P.size+'%';
+    document.getElementById('logoOpacity').value = P.opacity;
+    document.getElementById('logoOpacityOut').textContent = P.opacity+'%';
+  }
+  function save(){ try { localStorage.setItem('okbRD.logo',JSON.stringify(P)); } catch(e){} }
+  paintSettings();
+  Array.prototype.forEach.call(document.getElementById('segLogos').children,function(b){
+    b.onclick = function(){ P.which = b.getAttribute('data-v'); save(); paintSettings(); reseedAll(); };
+  });
+  document.getElementById('logoCount').oninput = function(){
+    P.count = Number(this.value); document.getElementById('logoCountOut').textContent = this.value;
+    save(); ensureCount();
+  };
+  document.getElementById('logoSize').oninput = function(){
+    P.size = Number(this.value); document.getElementById('logoSizeOut').textContent = this.value+'%';
+    save(); reseedAll();
+  };
+  document.getElementById('logoOpacity').oninput = function(){
+    P.opacity = Number(this.value); document.getElementById('logoOpacityOut').textContent = this.value+'%'; save();
+  };
+  document.getElementById('settingsLauncher').onclick = function(){
+    document.getElementById('settingsPanel').classList.toggle('open');
+  };
+  document.getElementById('settingsClose').onclick = function(){
+    document.getElementById('settingsPanel').classList.remove('open');
+  };
+  document.addEventListener('keydown',function(e){
+    if (e.ctrlKey && e.altKey && !e.metaKey && String(e.key).toLowerCase() === 'g'){
+      e.preventDefault();
+      var on = document.getElementById('settingsLauncher').classList.toggle('revealed');
+      if (!on) document.getElementById('settingsPanel').classList.remove('open');
+    } else if (e.key === 'Escape'){
+      document.getElementById('settingsPanel').classList.remove('open');
+      closePdfMenu();
+    }
+  });
+  if (reduced) return;
+  ensureCount();
+  function frame(t){
+    var v = vp(),i,j;
+    for (i=0;i<parts.length;i++){
+      var o = parts[i];
+      o.age = t-o.born;
+      if (o.age >= LIFE) seed(o,t,0);
+      var sc = 1+o.amp*Math.sin(o.phase+o.age*o.bSpeed);
+      o.size = o.base*sc; o.r = o.size/2; o.x += o.vx; o.y += o.vy;
+    }
+    for (i=0;i<parts.length;i++){
+      var A = parts[i];
+      for (j=i+1;j<parts.length;j++){
+        var B = parts[j],dx = B.x-A.x,dy = B.y-A.y,mn = A.r+B.r,d2 = dx*dx+dy*dy;
+        if (d2 > 0 && d2 < mn*mn){
+          var d = Math.sqrt(d2),nx = dx/d,ny = dy/d,ov = mn-d;
+          A.x -= nx*ov*.5; A.y -= ny*ov*.5; B.x += nx*ov*.5; B.y += ny*ov*.5;
+          var p = (A.vx-B.vx)*nx+(A.vy-B.vy)*ny;
+          if (p > 0){ A.vx -= p*nx; A.vy -= p*ny; B.vx += p*nx; B.vy += p*ny; }
+        }
+      }
+    }
+    for (i=0;i<parts.length;i++){
+      var q = parts[i],r = q.r;
+      if (q.x < r){ q.x = r; q.vx = Math.abs(q.vx); }
+      else if (q.x > v.w-r){ q.x = v.w-r; q.vx = -Math.abs(q.vx); }
+      if (q.y < r){ q.y = r; q.vy = Math.abs(q.vy); }
+      else if (q.y > v.h-r){ q.y = v.h-r; q.vy = -Math.abs(q.vy); }
+      var fin = Math.min(1,q.age/FADE),fout = Math.min(1,(LIFE-q.age)/FADE);
+      q.el.style.width = q.size+'px';
+      q.el.style.opacity = (P.opacity/100)*Math.min(fin,fout);
+      q.el.style.transform = 'translate('+(q.x-r)+'px,'+(q.y-r)+'px)';
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  var rt = null;
+  window.addEventListener('resize',function(){ clearTimeout(rt); rt = setTimeout(reseedAll,160); });
+})();
+</script>
+</body>
+</html>
